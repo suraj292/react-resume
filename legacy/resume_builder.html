@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Resume Builder | ResumeAI</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#4f46e5',
+                        secondary: '#6366f1',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+            border-radius: 10px;
+        }
+
+        .preview-container {
+            background-color: #f8fafc;
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+
+        /* Tooltip Styles */
+        .nav-item {
+            position: relative;
+        }
+
+        .tooltip {
+            position: absolute;
+            left: 100%;
+            top: 50%;
+            transform: translateY(-50%) translateX(10px);
+            background: #1e293b;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .nav-item:hover .tooltip {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(-50%) translateX(15px);
+        }
+
+        .tooltip::before {
+            content: '';
+            position: absolute;
+            right: 100%;
+            top: 50%;
+            margin-top: -4px;
+            border-width: 4px;
+            border-style: solid;
+            border-color: transparent #1e293b transparent transparent;
+        }
+
+        .sortable-ghost {
+            opacity: 0.2;
+            background: #eef2ff;
+            border: 2px dashed #4f46e5;
+            border-radius: 1rem;
+        }
+
+        .sortable-chosen {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-btn-active {
+            background-color: #eff6ff;
+            color: #4f46e5;
+            box-shadow: inset 0 0 0 1px #e0e7ff;
+        }
+
+        .drag-handle {
+            cursor: grab;
+        }
+
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+
+        .template-card-active,
+        .color-card-active {
+            border-color: #4f46e5 !important;
+            box-shadow: 0 0 0 2px #4f46e5;
+        }
+
+        /* Mobile Styles */
+        @media (max-width: 1023px) {
+            .mobile-sidebar-hidden {
+                transform: translateX(-100%);
+            }
+
+            /* Ensure main content is full width on mobile */
+            main {
+                margin-left: 0 !important;
+            }
+
+            .mobile-preview-modal {
+                position: fixed;
+                inset: 0;
+                z-index: 60;
+                background: rgba(0, 0, 0, 0.5);
+                backdrop-filter: blur(4px);
+                display: none;
+            }
+
+            .mobile-preview-modal.active {
+                display: flex;
+            }
+
+            .mobile-preview-content {
+                background: white;
+                width: 100%;
+                height: 100%;
+                overflow: auto;
+                animation: slideUp 0.3s ease-out;
+            }
+
+            @keyframes slideUp {
+                from {
+                    transform: translateY(100%);
+                }
+
+                to {
+                    transform: translateY(0);
+                }
+            }
+        }
+
+        /* Floating Preview Button */
+        .preview-fab {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+            box-shadow: 0 8px 24px rgba(79, 70, 229, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            z-index: 50;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .preview-fab:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 32px rgba(79, 70, 229, 0.5);
+        }
+
+        .preview-fab:active {
+            transform: scale(0.95);
+        }
+
+        @media (min-width: 1024px) {
+            .preview-fab {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-900 font-sans antialiased overflow-hidden h-screen">
+
+    <!-- Navbar -->
+    <nav
+        class="fixed top-0 left-0 right-0 h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 z-50">
+        <div class="flex items-center gap-3">
+            <!-- Mobile Menu Toggle -->
+            <button onclick="toggleMobileSidebar()"
+                class="lg:hidden w-8 h-8 flex items-center justify-center text-slate-600 hover:bg-slate-100 rounded-lg transition-all">
+                <i class="fa-solid fa-bars text-base"></i>
+            </button>
+            <div
+                class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold italic shadow-indigo-200 shadow-lg">
+                R</div>
+            <span class="font-display font-bold text-lg tracking-tight hidden md:block">ResumeAI</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="text-xs font-medium text-slate-400 hidden sm:block italic">Draft saved 2m ago</span>
+            <button
+                class="bg-slate-900 hover:bg-slate-800 text-white px-3 sm:px-4 py-1.5 rounded-lg font-bold text-xs transition-all flex items-center gap-2">
+                <i class="fa-solid fa-download text-[10px]"></i> <span class="hidden sm:inline">Export PDF</span><span
+                    class="sm:hidden">Export</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main View -->
+    <div class="flex h-screen pt-14 lg:flex-row">
+
+        <!-- Icon-Only Sidebar -->
+        <aside id="mobile-sidebar"
+            class="w-16 bg-white border-r border-slate-200 flex flex-col items-center py-6 gap-6 z-40 fixed left-0 top-14 bottom-0 transition-transform duration-300 mobile-sidebar-hidden lg:mobile-sidebar-hidden-none lg:relative lg:translate-x-0">
+            <div class="flex flex-col gap-4">
+                <div class="nav-item">
+                    <button onclick="switchTab('upload')" id="btn-upload"
+                        class="nav-btn w-10 h-10 flex items-center justify-center rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-all">
+                        <i class="fa-solid fa-cloud-arrow-up text-base"></i>
+                    </button>
+                    <div class="tooltip">Import & Job</div>
+                </div>
+
+                <div class="nav-item">
+                    <button onclick="switchTab('manual')" id="btn-manual"
+                        class="nav-btn w-10 h-10 flex items-center justify-center rounded-xl text-slate-400 transition-all">
+                        <i class="fa-solid fa-pen-to-square text-base"></i>
+                    </button>
+                    <div class="tooltip">Manual Info</div>
+                </div>
+
+                <div class="nav-item">
+                    <button onclick="switchTab('ai')" id="btn-ai"
+                        class="nav-btn w-10 h-10 flex items-center justify-center rounded-xl text-slate-400 transition-all">
+                        <i class="fa-solid fa-wand-magic-sparkles text-base"></i>
+                    </button>
+                    <div class="tooltip">AI Assistant</div>
+                </div>
+
+                <div class="nav-item">
+                    <button onclick="switchTab('templates')" id="btn-templates"
+                        class="nav-btn w-10 h-10 flex items-center justify-center rounded-xl text-slate-400 transition-all">
+                        <i class="fa-solid fa-layer-group text-base"></i>
+                    </button>
+                    <div class="tooltip">Templates</div>
+                </div>
+
+                <div class="nav-item">
+                    <button onclick="switchTab('colors')" id="btn-colors"
+                        class="nav-btn w-10 h-10 flex items-center justify-center rounded-xl nav-btn-active transition-all">
+                        <i class="fa-solid fa-palette text-base"></i>
+                    </button>
+                    <div class="tooltip">Color Palette</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Dynamic Workspace -->
+        <main class="flex-1 flex overflow-hidden">
+
+            <!-- Editor Content (Left) -->
+            <section
+                class="flex-1 lg:flex-[0.8] bg-white overflow-y-auto custom-scrollbar border-r border-slate-200 w-full">
+                <div class="max-w-xl mx-auto py-6 sm:py-10 px-4 sm:px-6 pb-24 lg:pb-10">
+
+                    <!-- Tab: Upload & Job Context -->
+                    <div id="tab-upload" class="tab-content hidden">
+                        <header class="mb-8">
+                            <h2 class="text-xl font-display font-bold text-slate-800">Import & Context</h2>
+                            <p class="text-slate-400 text-xs mt-1 font-medium italic">Provide background for the AI to
+                                tailor your resume specifically to the role.</p>
+                        </header>
+
+                        <div class="space-y-10">
+                            <!-- Resume Context Section -->
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between">
+                                    <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Current
+                                        Resume</h3>
+                                    <div class="flex bg-slate-100 p-0.5 rounded-lg">
+                                        <button onclick="toggleInputMode('resume', 'upload')" id="resume-mode-upload"
+                                            class="px-3 py-1 text-[9px] font-bold rounded-md bg-white shadow-sm text-indigo-600 transition-all">Upload</button>
+                                        <button onclick="toggleInputMode('resume', 'paste')" id="resume-mode-paste"
+                                            class="px-3 py-1 text-[9px] font-bold rounded-md text-slate-500 transition-all">Paste
+                                            Text</button>
+                                    </div>
+                                </div>
+                                <div id="resume-input-upload"
+                                    class="group relative border-2 border-dashed border-slate-200 rounded-3xl p-8 text-center bg-slate-50/50 hover:border-indigo-400 hover:bg-indigo-50/30 transition-all cursor-pointer">
+                                    <input type="file" class="absolute inset-0 opacity-0 cursor-pointer"
+                                        accept=".pdf,.doc,.docx">
+                                    <div class="flex flex-col items-center">
+                                        <i class="fa-solid fa-file-pdf text-indigo-400 text-2xl mb-3"></i>
+                                        <p class="text-sm font-bold text-slate-700">Drop your current resume</p>
+                                        <p class="text-[9px] text-slate-400 mt-1">PDF or Word</p>
+                                    </div>
+                                </div>
+                                <div id="resume-input-paste"
+                                    class="hidden bg-white border border-slate-200 rounded-2xl overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500/10 focus-within:border-indigo-500 transition-all">
+                                    <textarea rows="4"
+                                        class="w-full p-4 text-xs outline-none resize-none placeholder:text-slate-300"
+                                        placeholder="Paste your existing resume text here..."></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Job Description Context Section -->
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between">
+                                    <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Target
+                                        Job Description</h3>
+                                    <div class="flex bg-slate-100 p-0.5 rounded-lg">
+                                        <button onclick="toggleInputMode('job', 'paste')" id="job-mode-paste"
+                                            class="px-3 py-1 text-[9px] font-bold rounded-md bg-white shadow-sm text-indigo-600 transition-all">Paste
+                                            Text</button>
+                                        <button onclick="toggleInputMode('job', 'upload')" id="job-mode-upload"
+                                            class="px-3 py-1 text-[9px] font-bold rounded-md text-slate-500 transition-all">Upload
+                                            File</button>
+                                    </div>
+                                </div>
+                                <div id="job-input-paste"
+                                    class="bg-white border border-slate-200 rounded-2xl overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500/10 focus-within:border-indigo-500 transition-all">
+                                    <textarea rows="6"
+                                        class="w-full p-4 text-xs outline-none resize-none placeholder:text-slate-300"
+                                        placeholder="Paste the job requirements..."></textarea>
+                                </div>
+                                <div id="job-input-upload"
+                                    class="hidden group relative border-2 border-dashed border-slate-200 rounded-3xl p-8 text-center bg-slate-50/50 hover:border-indigo-400 hover:bg-indigo-50/30 transition-all cursor-pointer">
+                                    <input type="file" class="absolute inset-0 opacity-0 cursor-pointer"
+                                        accept=".pdf,.doc,.docx,.txt">
+                                    <div class="flex flex-col items-center">
+                                        <i class="fa-solid fa-briefcase text-slate-300 text-2xl mb-3"></i>
+                                        <p class="text-sm font-bold text-slate-700">Upload Job Ad / PDF</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button
+                                class="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold text-xs uppercase tracking-[0.2em] hover:bg-indigo-600 transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-3">
+                                <i class="fa-solid fa-bolt-lightning text-amber-400"></i>
+                                Save Context for AI
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tab: Manual Content -->
+                    <div id="tab-manual" class="tab-content">
+                        <header class="mb-8">
+                            <h2 class="text-xl font-display font-bold text-slate-800">Personal Details</h2>
+                            <p class="text-slate-400 text-xs mt-1 font-medium">Reorder your information blocks by
+                                dragging the handles <i class="fa-solid fa-grip-vertical mx-1"></i>.</p>
+                        </header>
+
+                        <div id="sortable-fields" class="space-y-4">
+                            <!-- Draggable blocks restored... -->
+                            <div
+                                class="group relative bg-white border border-slate-200 p-4 rounded-2xl hover:border-indigo-300 transition-colors flex items-start gap-4 shadow-sm">
+                                <div class="drag-handle mt-1.5 text-slate-300 hover:text-indigo-400 transition-colors">
+                                    <i class="fa-solid fa-grip-vertical"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <label
+                                        class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Full
+                                        Name</label>
+                                    <input type="text" placeholder="e.g. John Doe"
+                                        class="w-full bg-transparent font-bold text-slate-800 outline-none text-base">
+                                </div>
+                            </div>
+                            <div
+                                class="group relative bg-white border border-slate-200 p-4 rounded-2xl hover:border-indigo-300 transition-colors flex items-start gap-4 shadow-sm">
+                                <div class="drag-handle mt-1.5 text-slate-300 hover:text-indigo-400 transition-colors">
+                                    <i class="fa-solid fa-grip-vertical"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <label
+                                        class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Professional
+                                        Title</label>
+                                    <input type="text" placeholder="e.g. Software Engineer"
+                                        class="w-full bg-transparent font-semibold text-slate-700 outline-none text-sm">
+                                </div>
+                            </div>
+                            <div
+                                class="group relative bg-white border border-slate-200 p-4 rounded-2xl hover:border-indigo-300 transition-colors flex items-start gap-4 shadow-sm">
+                                <div class="drag-handle mt-1.5 text-slate-300 hover:text-indigo-400 transition-colors">
+                                    <i class="fa-solid fa-grip-vertical"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <label
+                                        class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Email
+                                        Address</label>
+                                    <input type="email" placeholder="john@example.com"
+                                        class="w-full bg-transparent font-semibold text-slate-700 outline-none text-sm">
+                                </div>
+                            </div>
+                            <div
+                                class="group relative bg-white border border-slate-200 p-4 rounded-2xl hover:border-indigo-300 transition-colors flex items-start gap-4 shadow-sm">
+                                <div class="drag-handle mt-1.5 text-slate-300 hover:text-indigo-400 transition-colors">
+                                    <i class="fa-solid fa-grip-vertical"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <label
+                                        class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Phone
+                                        Number</label>
+                                    <input type="tel" placeholder="+1 (555) 000-0000"
+                                        class="w-full bg-transparent font-semibold text-slate-700 outline-none text-sm">
+                                </div>
+                            </div>
+                            <div
+                                class="group relative bg-white border border-slate-200 p-4 rounded-2xl hover:border-indigo-300 transition-colors flex items-start gap-4 shadow-sm">
+                                <div class="drag-handle mt-1.5 text-slate-300 hover:text-indigo-400 transition-colors">
+                                    <i class="fa-solid fa-grip-vertical"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <label
+                                        class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Location
+                                        / Address</label>
+                                    <input type="text" placeholder="New York, NY"
+                                        class="w-full bg-transparent font-semibold text-slate-700 outline-none text-sm">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab: AI Assistant -->
+                    <div id="tab-ai" class="tab-content">
+                        <header class="mb-8">
+                            <h2 class="text-xl font-display font-bold text-slate-800 flex items-center gap-2">
+                                <i class="fa-solid fa-wand-magic-sparkles text-indigo-500"></i>
+                                AI Resume Engine
+                            </h2>
+                            <p class="text-slate-400 text-xs mt-1 font-medium italic">Transform your draft into a
+                                job-winning resume with one click.</p>
+                        </header>
+
+                        <div class="space-y-6">
+                            <!-- Primary Actions -->
+                            <div class="grid grid-cols-1 gap-4">
+                                <button
+                                    class="group relative bg-indigo-600 hover:bg-indigo-700 text-white p-5 rounded-3xl transition-all shadow-xl shadow-indigo-100 overflow-hidden text-left">
+                                    <div class="relative z-10">
+                                        <i class="fa-solid fa-sparkles mb-3 block text-indigo-200"></i>
+                                        <span class="block text-sm font-bold leading-tight">Generate Entire
+                                            Resume</span>
+                                        <span class="block text-[10px] text-indigo-100 mt-1">Based on Job Context</span>
+                                    </div>
+                                    <i
+                                        class="fa-solid fa-bolt absolute -right-2 -bottom-2 text-6xl text-white/10 group-hover:scale-110 transition-transform"></i>
+                                </button>
+                                <button
+                                    class="group relative bg-white border border-slate-200 hover:border-indigo-400 p-5 rounded-3xl transition-all shadow-sm text-left">
+                                    <div class="relative z-10">
+                                        <i class="fa-solid fa-arrows-spin mb-3 block text-indigo-500"></i>
+                                        <span class="block text-sm font-bold text-slate-800 leading-tight">Optimize for
+                                            ATS</span>
+                                        <span class="block text-[10px] text-slate-400 mt-1">Match keywords &
+                                            format</span>
+                                    </div>
+                                </button>
+                            </div>
+
+                            <!-- Suggested AI Features -->
+                            <div class="pt-4 border-t border-slate-100">
+                                <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Smart
+                                    Suggestions</h3>
+                                <div class="space-y-3">
+                                    <!-- ATS Score -->
+                                    <div
+                                        class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                        <div class="flex items-center gap-3">
+                                            <div
+                                                class="w-8 h-8 bg-amber-100 text-amber-600 rounded-lg flex items-center justify-center text-xs font-bold">
+                                                72</div>
+                                            <div>
+                                                <p class="text-xs font-bold text-slate-700">ATS Match Score</p>
+                                                <p class="text-[10px] text-slate-400">Improve by adding "Kubernetes"</p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            class="text-[10px] font-bold text-indigo-600 hover:underline">Details</button>
+                                    </div>
+
+                                    <!-- Bullet Point Improver -->
+                                    <div
+                                        class="group flex items-center justify-between p-4 hover:bg-indigo-50/50 rounded-2xl border border-transparent hover:border-indigo-100 transition-all cursor-pointer">
+                                        <div class="flex items-center gap-3">
+                                            <div
+                                                class="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center">
+                                                <i class="fa-solid fa-list-check text-xs"></i>
+                                            </div>
+                                            <div>
+                                                <p class="text-xs font-bold text-slate-700">Bullet Point Improver</p>
+                                                <p class="text-[10px] text-slate-400">Rewrite with impact verbs</p>
+                                            </div>
+                                        </div>
+                                        <i
+                                            class="fa-solid fa-chevron-right text-[10px] text-slate-300 group-hover:text-indigo-400 transition-colors"></i>
+                                    </div>
+
+                                    <!-- Skill Gap Analysis -->
+                                    <div
+                                        class="group flex items-center justify-between p-4 hover:bg-indigo-50/50 rounded-2xl border border-transparent hover:border-indigo-100 transition-all cursor-pointer">
+                                        <div class="flex items-center gap-3">
+                                            <div
+                                                class="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center">
+                                                <i class="fa-solid fa-magnifying-glass-chart text-xs"></i>
+                                            </div>
+                                            <div>
+                                                <p class="text-xs font-bold text-slate-700">Skill Gap Analysis</p>
+                                                <p class="text-[10px] text-slate-400">Find what keywords are missing</p>
+                                            </div>
+                                        </div>
+                                        <i
+                                            class="fa-solid fa-chevron-right text-[10px] text-slate-300 group-hover:text-indigo-400 transition-colors"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tone Selection -->
+                            <div class="p-5 bg-indigo-50/30 rounded-3xl border border-indigo-100">
+                                <label
+                                    class="text-[10px] font-bold text-indigo-900 uppercase tracking-widest block mb-3">AI
+                                    Writing Tone</label>
+                                <div class="flex gap-2">
+                                    <button
+                                        class="flex-1 py-2 px-3 bg-white text-indigo-600 text-[10px] font-bold rounded-xl shadow-sm border border-indigo-200">Professional</button>
+                                    <button
+                                        class="flex-1 py-2 px-3 text-slate-500 text-[10px] font-bold rounded-xl hover:bg-white transition-all">Creative</button>
+                                    <button
+                                        class="flex-1 py-2 px-3 text-slate-500 text-[10px] font-bold rounded-xl hover:bg-white transition-all">Direct</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab: Templates -->
+                    <div id="tab-templates" class="tab-content">
+                        <header class="mb-8">
+                            <h2 class="text-xl font-display font-bold text-slate-800">Choose a Layout</h2>
+                            <p class="text-slate-400 text-xs mt-1 font-medium">Select a design that matches your
+                                industry and seniority level.</p>
+                        </header>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                            <!-- Template 1: Modern Executive -->
+                            <div onclick="selectTemplate('modern')" id="tpl-modern"
+                                class="template-card group relative bg-white border-2 border-slate-100 p-2 rounded-2xl cursor-pointer hover:border-indigo-200 hover:shadow-lg transition-all template-card-active">
+                                <div class="aspect-[3/4] bg-slate-50 rounded-xl mb-3 overflow-hidden p-3 space-y-2">
+                                    <div class="h-4 bg-slate-900 w-2/3 rounded-sm mb-4"></div>
+                                    <div class="h-2 bg-indigo-200 w-full rounded-full"></div>
+                                    <div class="h-2 bg-slate-200 w-full rounded-full"></div>
+                                    <div class="h-2 bg-slate-200 w-3/4 rounded-full"></div>
+                                    <div class="pt-2 grid grid-cols-2 gap-2">
+                                        <div class="h-10 bg-slate-100 rounded-md"></div>
+                                        <div class="h-10 bg-slate-100 rounded-md"></div>
+                                    </div>
+                                </div>
+                                <div class="px-2 pb-2">
+                                    <div class="flex items-center justify-between">
+                                        <p class="text-xs font-bold text-slate-800">Modern Executive</p>
+                                        <i
+                                            class="fa-solid fa-circle-check text-indigo-600 text-sm hidden group-[.template-card-active]:block"></i>
+                                    </div>
+                                    <p class="text-[9px] text-slate-400 mt-0.5 uppercase tracking-wider font-bold">Best
+                                        for Tech & SaaS</p>
+                                </div>
+                            </div>
+
+                            <!-- Template 2: Creative Minimal -->
+                            <div onclick="selectTemplate('creative')" id="tpl-creative"
+                                class="template-card group relative bg-white border-2 border-slate-100 p-2 rounded-2xl cursor-pointer hover:border-indigo-200 hover:shadow-lg transition-all">
+                                <div class="aspect-[3/4] bg-slate-50 rounded-xl mb-3 overflow-hidden flex">
+                                    <div class="w-1/3 bg-slate-800 p-2 space-y-2">
+                                        <div class="w-6 h-6 bg-slate-600 rounded-full mx-auto"></div>
+                                        <div class="h-1 bg-slate-600 w-full rounded-full"></div>
+                                        <div class="h-1 bg-slate-600 w-full rounded-full"></div>
+                                    </div>
+                                    <div class="flex-1 p-3 space-y-3">
+                                        <div class="h-3 bg-slate-300 w-1/2 rounded-sm"></div>
+                                        <div class="space-y-1">
+                                            <div class="h-1 bg-slate-200 w-full"></div>
+                                            <div class="h-1 bg-slate-200 w-full"></div>
+                                            <div class="h-1 bg-slate-200 w-2/3"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="px-2 pb-2">
+                                    <div class="flex items-center justify-between">
+                                        <p class="text-xs font-bold text-slate-800">Creative Sidebar</p>
+                                        <i
+                                            class="fa-solid fa-circle-check text-indigo-600 text-sm hidden group-[.template-card-active]:block"></i>
+                                    </div>
+                                    <p class="text-[9px] text-slate-400 mt-0.5 uppercase tracking-wider font-bold">
+                                        Design & Marketing</p>
+                                </div>
+                            </div>
+
+                            <!-- Template 3: Academic Pro -->
+                            <div onclick="selectTemplate('academic')" id="tpl-academic"
+                                class="template-card group relative bg-white border-2 border-slate-100 p-2 rounded-2xl cursor-pointer hover:border-indigo-200 hover:shadow-lg transition-all">
+                                <div
+                                    class="aspect-[3/4] bg-slate-50 rounded-xl mb-3 overflow-hidden p-3 flex flex-col items-center">
+                                    <div class="h-2 bg-slate-900 w-1/2 rounded-full mb-1"></div>
+                                    <div class="h-1 bg-slate-400 w-1/3 rounded-full mb-6"></div>
+                                    <div class="w-full space-y-3">
+                                        <div class="flex justify-between border-b border-slate-200 pb-1">
+                                            <div class="h-2 bg-slate-800 w-1/4 rounded-full"></div>
+                                            <div class="h-2 bg-slate-200 w-1/6 rounded-full"></div>
+                                        </div>
+                                        <div class="h-1 bg-slate-200 w-full"></div>
+                                        <div class="h-1 bg-slate-200 w-full"></div>
+                                        <div class="h-1 bg-slate-200 w-4/5"></div>
+                                    </div>
+                                </div>
+                                <div class="px-2 pb-2">
+                                    <div class="flex items-center justify-between">
+                                        <p class="text-xs font-bold text-slate-800">Academic Elite</p>
+                                        <i
+                                            class="fa-solid fa-circle-check text-indigo-600 text-sm hidden group-[.template-card-active]:block"></i>
+                                    </div>
+                                    <p class="text-[9px] text-slate-400 mt-0.5 uppercase tracking-wider font-bold">
+                                        Formal & Corporate</p>
+                                </div>
+                            </div>
+
+                            <!-- Template 4: Minimalist Bold -->
+                            <div onclick="selectTemplate('minimal')" id="tpl-minimal"
+                                class="template-card group relative bg-white border-2 border-slate-100 p-2 rounded-2xl cursor-pointer hover:border-indigo-200 hover:shadow-lg transition-all">
+                                <div class="aspect-[3/4] bg-slate-50 rounded-xl mb-3 overflow-hidden p-6 space-y-4">
+                                    <div class="h-8 bg-slate-900 w-full rounded-sm"></div>
+                                    <div class="space-y-2">
+                                        <div class="h-2 bg-slate-300 w-1/4"></div>
+                                        <div class="h-1 bg-slate-200 w-full"></div>
+                                        <div class="h-1 bg-slate-200 w-full"></div>
+                                    </div>
+                                    <div class="space-y-2 pt-2">
+                                        <div class="h-2 bg-slate-300 w-1/4"></div>
+                                        <div class="h-1 bg-slate-200 w-full"></div>
+                                        <div class="h-1 bg-slate-200 w-5/6"></div>
+                                    </div>
+                                </div>
+                                <div class="px-2 pb-2">
+                                    <div class="flex items-center justify-between">
+                                        <p class="text-xs font-bold text-slate-800">Minimalist Bold</p>
+                                        <i
+                                            class="fa-solid fa-circle-check text-indigo-600 text-sm hidden group-[.template-card-active]:block"></i>
+                                    </div>
+                                    <p class="text-[9px] text-slate-400 mt-0.5 uppercase tracking-wider font-bold">Clean
+                                        & Functional</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab: Colors -->
+                    <div id="tab-colors" class="tab-content">
+                        <header class="mb-8">
+                            <h2 class="text-xl font-display font-bold text-slate-800">Accent Colors</h2>
+                            <p class="text-slate-400 text-xs mt-1 font-medium italic">Apply a brand identity to your
+                                resume with professionally tuned palettes.</p>
+                        </header>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <!-- Palette: Indigo (Default) -->
+                            <button onclick="selectColor('indigo', '#4f46e5')" id="color-indigo"
+                                class="color-card group text-left bg-white border-2 border-slate-100 p-4 rounded-2xl transition-all hover:border-indigo-100 color-card-active">
+                                <div class="flex items-center gap-3 mb-3">
+                                    <div class="w-8 h-8 rounded-full bg-indigo-600 shadow-lg shadow-indigo-100"></div>
+                                    <div class="w-8 h-8 rounded-full bg-indigo-50 border border-indigo-100"></div>
+                                </div>
+                                <p class="text-[11px] font-bold text-slate-700">Royal Indigo</p>
+                                <p class="text-[9px] text-slate-400 uppercase font-bold tracking-tighter">Default
+                                    Corporate</p>
+                            </button>
+
+                            <!-- Palette: Emerald -->
+                            <button onclick="selectColor('emerald', '#059669')" id="color-emerald"
+                                class="color-card group text-left bg-white border-2 border-slate-100 p-4 rounded-2xl transition-all hover:border-emerald-100">
+                                <div class="flex items-center gap-3 mb-3">
+                                    <div class="w-8 h-8 rounded-full bg-emerald-600 shadow-lg shadow-emerald-100"></div>
+                                    <div class="w-8 h-8 rounded-full bg-emerald-50 border border-emerald-100"></div>
+                                </div>
+                                <p class="text-[11px] font-bold text-slate-700">Growth Emerald</p>
+                                <p class="text-[9px] text-slate-400 uppercase font-bold tracking-tighter">Finance &
+                                    Healthcare</p>
+                            </button>
+
+                            <!-- Palette: Rose -->
+                            <button onclick="selectColor('rose', '#e11d48')" id="color-rose"
+                                class="color-card group text-left bg-white border-2 border-slate-100 p-4 rounded-2xl transition-all hover:border-rose-100">
+                                <div class="flex items-center gap-3 mb-3">
+                                    <div class="w-8 h-8 rounded-full bg-rose-600 shadow-lg shadow-rose-100"></div>
+                                    <div class="w-8 h-8 rounded-full bg-rose-50 border border-rose-100"></div>
+                                </div>
+                                <p class="text-[11px] font-bold text-slate-700">Passion Rose</p>
+                                <p class="text-[9px] text-slate-400 uppercase font-bold tracking-tighter">Creative & NGO
+                                </p>
+                            </button>
+
+                            <!-- Palette: Slate/Classic -->
+                            <button onclick="selectColor('slate', '#334155')" id="color-slate"
+                                class="color-card group text-left bg-white border-2 border-slate-100 p-4 rounded-2xl transition-all hover:border-slate-200">
+                                <div class="flex items-center gap-3 mb-3">
+                                    <div class="w-8 h-8 rounded-full bg-slate-700 shadow-lg shadow-slate-100"></div>
+                                    <div class="w-8 h-8 rounded-full bg-slate-50 border border-slate-200"></div>
+                                </div>
+                                <p class="text-[11px] font-bold text-slate-700">Classic Slate</p>
+                                <p class="text-[9px] text-slate-400 uppercase font-bold tracking-tighter">Modern
+                                    Minimalist</p>
+                            </button>
+
+                            <!-- Palette: Amber -->
+                            <button onclick="selectColor('amber', '#d97706')" id="color-amber"
+                                class="color-card group text-left bg-white border-2 border-slate-100 p-4 rounded-2xl transition-all hover:border-amber-100">
+                                <div class="flex items-center gap-3 mb-3">
+                                    <div class="w-8 h-8 rounded-full bg-amber-600 shadow-lg shadow-amber-100"></div>
+                                    <div class="w-8 h-8 rounded-full bg-amber-50 border border-amber-100"></div>
+                                </div>
+                                <p class="text-[11px] font-bold text-slate-700">Solar Amber</p>
+                                <p class="text-[9px] text-slate-400 uppercase font-bold tracking-tighter">High Energy &
+                                    Sales</p>
+                            </button>
+
+                            <!-- Palette: Violet -->
+                            <button onclick="selectColor('violet', '#7c3aed')" id="color-violet"
+                                class="color-card group text-left bg-white border-2 border-slate-100 p-4 rounded-2xl transition-all hover:border-violet-100">
+                                <div class="flex items-center gap-3 mb-3">
+                                    <div class="w-8 h-8 rounded-full bg-violet-600 shadow-lg shadow-violet-100"></div>
+                                    <div class="w-8 h-8 rounded-full bg-violet-50 border border-violet-100"></div>
+                                </div>
+                                <p class="text-[11px] font-bold text-slate-700">Deep Violet</p>
+                                <p class="text-[9px] text-slate-400 uppercase font-bold tracking-tighter">Luxury &
+                                    Visionary</p>
+                            </button>
+
+                            <!-- Palette: Custom Selection -->
+                            <div id="color-custom"
+                                class="color-card group relative bg-white border-2 border-slate-100 p-4 rounded-2xl transition-all hover:border-indigo-100">
+                                <div class="flex items-center gap-3 mb-3">
+                                    <div id="custom-color-preview"
+                                        class="w-8 h-8 rounded-full bg-slate-200 shadow-lg flex items-center justify-center overflow-hidden border border-slate-200">
+                                        <i class="fa-solid fa-plus text-[10px] text-slate-400"></i>
+                                    </div>
+                                    <input type="color" id="custom-color-input" oninput="handleCustomColor(this.value)"
+                                        class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
+                                    <div class="w-8 h-8 rounded-full bg-slate-50 border border-slate-100"></div>
+                                </div>
+                                <p class="text-[11px] font-bold text-slate-700">Custom Hue</p>
+                                <p class="text-[9px] text-slate-400 uppercase font-bold tracking-tighter">Click to pick
+                                    color</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Preview (Right) - Desktop -->
+            <section
+                class="hidden lg:flex flex-[1.5] preview-container items-start justify-center p-12 overflow-y-auto custom-scrollbar">
+                <div class="sticky top-0 w-full max-w-[800px]">
+                    <div id="resume-sheet"
+                        class="bg-white shadow-2xl w-full min-h-[1000px] p-8 lg:p-16 origin-top transform">
+                        <div class="border-b-4 border-slate-900 pb-8 mb-8">
+                            <h1 id="preview-name"
+                                class="text-4xl font-black text-slate-900 tracking-tight uppercase transition-colors duration-500">
+                                Jonathan Doe</h1>
+                            <p id="preview-title"
+                                class="text-lg text-indigo-600 font-bold mt-1 transition-colors duration-500">Senior
+                                Software Engineer</p>
+                            <div class="flex gap-4 mt-4 text-[11px] font-bold text-slate-400">
+                                <span><i class="fa-solid fa-envelope mr-1.5"></i> J.DOE@EXAMPLE.COM</span>
+                                <span><i class="fa-solid fa-phone mr-1.5"></i> +1 555 123 4567</span>
+                            </div>
+                        </div>
+
+                        <!-- Mock Body Content -->
+                        <div class="space-y-8">
+                            <div>
+                                <h3
+                                    class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-100 pb-1">
+                                    Experience</h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <div class="flex justify-between items-baseline">
+                                            <h4 class="font-bold text-slate-800">Principal Engineer at TechCorp</h4>
+                                            <span class="text-[10px] font-bold text-slate-400 italic">2021 —
+                                                PRESENT</span>
+                                        </div>
+                                        <p class="text-xs text-slate-500 mt-1 leading-relaxed">Led the migration of
+                                            legacy infrastructure to a modern microservices architecture, improving
+                                            system uptime by 40%.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Mobile Preview Modal -->
+    <div id="mobile-preview-modal" class="mobile-preview-modal lg:hidden">
+        <div class="mobile-preview-content">
+            <!-- Close Button -->
+            <div
+                class="sticky top-0 z-10 bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between">
+                <h3 class="font-display font-bold text-lg">Resume Preview</h3>
+                <button onclick="closeMobilePreview()"
+                    class="w-10 h-10 flex items-center justify-center text-slate-600 hover:bg-slate-100 rounded-lg transition-all">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <!-- Preview Content -->
+            <div class="preview-container p-6">
+                <div class="bg-white shadow-2xl w-full min-h-[1000px] p-6 mx-auto max-w-2xl">
+                    <div class="border-b-4 border-slate-900 pb-8 mb-8">
+                        <h1
+                            class="text-3xl font-black text-slate-900 tracking-tight uppercase transition-colors duration-500">
+                            Jonathan Doe</h1>
+                        <p class="text-base text-indigo-600 font-bold mt-1 transition-colors duration-500">Senior
+                            Software Engineer</p>
+                        <div class="flex flex-wrap gap-3 mt-4 text-[10px] font-bold text-slate-400">
+                            <span><i class="fa-solid fa-envelope mr-1.5"></i> J.DOE@EXAMPLE.COM</span>
+                            <span><i class="fa-solid fa-phone mr-1.5"></i> +1 555 123 4567</span>
+                        </div>
+                    </div>
+
+                    <!-- Mock Body Content -->
+                    <div class="space-y-8">
+                        <div>
+                            <h3
+                                class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-100 pb-1">
+                                Experience</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <div class="flex justify-between items-baseline flex-wrap gap-2">
+                                        <h4 class="font-bold text-slate-800">Principal Engineer at TechCorp</h4>
+                                        <span class="text-[10px] font-bold text-slate-400 italic">2021 —
+                                            PRESENT</span>
+                                    </div>
+                                    <p class="text-xs text-slate-500 mt-1 leading-relaxed">Led the migration of
+                                        legacy infrastructure to a modern microservices architecture, improving
+                                        system uptime by 40%.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Preview Button (Mobile Only) -->
+    <button onclick="openMobilePreview()" class="preview-fab lg:hidden" aria-label="Preview Resume">
+        <i class="fa-solid fa-eye"></i>
+    </button>
+
+    <!-- Mobile Sidebar Overlay -->
+    <div id="sidebar-overlay" onclick="toggleMobileSidebar()"
+        class="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-30 hidden"></div>
+
+    <script>
+        // Tab Switching
+        function switchTab(tabId) {
+            const navBtn = document.getElementById('btn-' + tabId);
+            const tabContent = document.getElementById('tab-' + tabId);
+
+            if (!navBtn || !tabContent) return;
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('nav-btn-active', 'bg-indigo-50', 'text-indigo-600');
+                btn.classList.add('text-slate-400');
+            });
+
+            navBtn.classList.add('nav-btn-active', 'bg-indigo-50', 'text-indigo-600');
+            navBtn.classList.remove('text-slate-400');
+
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            tabContent.classList.remove('hidden');
+
+            gsap.from(tabContent, { y: 10, opacity: 0, duration: 0.2 });
+
+            // Close mobile sidebar after switching tabs
+            if (typeof closeMobileSidebarIfNeeded === 'function') {
+                closeMobileSidebarIfNeeded();
+            }
+        }
+
+        // Mode Switching
+        function toggleInputMode(type, mode) {
+            const up = document.getElementById(`${type}-input-upload`);
+            const ps = document.getElementById(`${type}-input-paste`);
+            const bU = document.getElementById(`${type}-mode-upload`);
+            const bP = document.getElementById(`${type}-mode-paste`);
+
+            if (!up || !ps || !bU || !bP) return;
+
+            if (mode === 'upload') {
+                up.classList.remove('hidden'); ps.classList.add('hidden');
+                bU.classList.add('bg-white', 'shadow-sm', 'text-indigo-600'); bP.classList.remove('bg-white', 'shadow-sm', 'text-indigo-600');
+            } else {
+                up.classList.add('hidden'); ps.classList.remove('hidden');
+                bP.classList.add('bg-white', 'shadow-sm', 'text-indigo-600'); bU.classList.remove('bg-white', 'shadow-sm', 'text-indigo-600');
+            }
+        }
+
+        // Template Selection
+        function selectTemplate(templateName) {
+            document.querySelectorAll('.template-card').forEach(card => {
+                card.classList.remove('template-card-active');
+                card.classList.add('border-slate-100');
+            });
+
+            const selectedCard = document.getElementById('tpl-' + templateName);
+            if (selectedCard) {
+                selectedCard.classList.add('template-card-active');
+                selectedCard.classList.remove('border-slate-100');
+            }
+
+            gsap.fromTo("#resume-sheet",
+                { opacity: 0.5, scale: 0.98 },
+                { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }
+            );
+        }
+
+        // Color Selection
+        function selectColor(colorId, hexCode) {
+            // Remove active class from all color cards
+            document.querySelectorAll('.color-card').forEach(card => {
+                card.classList.remove('color-card-active');
+                card.classList.add('border-slate-100');
+            });
+
+            const selectedCard = document.getElementById('color-' + colorId);
+            if (selectedCard) {
+                selectedCard.classList.add('color-card-active');
+                selectedCard.classList.remove('border-slate-100');
+            }
+
+            // Update Preview Colors
+            const previewName = document.getElementById('preview-name');
+            const previewTitle = document.getElementById('preview-title');
+
+            if (previewName && previewTitle) {
+                previewTitle.style.color = hexCode;
+
+                // Subtle feedback on the sheet
+                gsap.to("#resume-sheet", {
+                    boxShadow: `0 25px 50px -12px ${hexCode}20`,
+                    duration: 0.5
+                });
+            }
+        }
+
+        // Custom Color Handling
+        function handleCustomColor(hexCode) {
+            const previewCircle = document.getElementById('custom-color-preview');
+            if (previewCircle) {
+                previewCircle.style.backgroundColor = hexCode;
+                previewCircle.innerHTML = ''; // Remove the plus icon
+            }
+            selectColor('custom', hexCode);
+        }
+
+        // Mobile Sidebar Toggle
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('mobile-sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+
+            if (!sidebar || !overlay) return;
+
+            const isHidden = sidebar.classList.contains('mobile-sidebar-hidden');
+
+            if (isHidden) {
+                sidebar.classList.remove('mobile-sidebar-hidden');
+                overlay.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            } else {
+                sidebar.classList.add('mobile-sidebar-hidden');
+                overlay.classList.add('hidden');
+                document.body.style.overflow = '';
+            }
+        }
+
+        // Mobile Preview Modal
+        function openMobilePreview() {
+            const modal = document.getElementById('mobile-preview-modal');
+            if (modal) {
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeMobilePreview() {
+            const modal = document.getElementById('mobile-preview-modal');
+            if (modal) {
+                modal.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }
+
+        // Close mobile sidebar when switching tabs
+        function closeMobileSidebarIfNeeded() {
+            // Auto-close sidebar on mobile after tab switch
+            if (window.innerWidth < 1024) {
+                const sidebar = document.getElementById('mobile-sidebar');
+                const overlay = document.getElementById('sidebar-overlay');
+                if (sidebar && overlay) {
+                    sidebar.classList.add('mobile-sidebar-hidden');
+                    overlay.classList.add('hidden');
+                    document.body.style.overflow = '';
+                }
+            }
+        }
+
+        window.onload = function () {
+            // Drag & Drop Init
+            const sortableEl = document.getElementById('sortable-fields');
+            if (sortableEl) {
+                new Sortable(sortableEl, {
+                    animation: 250,
+                    handle: '.drag-handle',
+                    ghostClass: 'sortable-ghost',
+                    chosenClass: 'sortable-chosen',
+                    forceFallback: true
+                });
+            }
+
+            // Entrance animation
+            gsap.from("aside .nav-item", { x: -20, opacity: 0, duration: 0.4, stagger: 0.05, ease: "back.out(1.7)" });
+            gsap.from("#resume-sheet", { y: 40, opacity: 0, duration: 1, delay: 0.2, ease: "power4.out" });
+        };
+    </script>
+</body>
+
+</html>
