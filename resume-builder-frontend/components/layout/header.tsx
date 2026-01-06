@@ -1,10 +1,43 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Header() {
+    const router = useRouter();
+    const { user, logout } = useAuth();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [showUserMenu, setShowUserMenu] = useState(false);
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    // Close menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setShowUserMenu(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleLogout = async () => {
+        await logout();
+        router.push('/login');
+    };
+
+    const getUserInitials = () => {
+        if (!user?.name) return 'U';
+        return user.name
+            .split(' ')
+            .map(n => n[0])
+            .join('')
+            .toUpperCase()
+            .slice(0, 2);
+    };
 
     return (
         <nav className="glass-header fixed w-full z-50 top-0 bg-white/85 backdrop-blur-md border-b border-slate-200/60">
@@ -40,15 +73,79 @@ export default function Header() {
 
                 {/* CTA */}
                 <div className="hidden md:flex items-center gap-4">
-                    <Link href="/login" className="text-sm font-medium text-slate-600 hover:text-slate-900">
-                        Log In
-                    </Link>
-                    <Link
-                        href="/builder"
-                        className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold shadow-lg hover:bg-slate-800 hover:shadow-xl transition-all transform hover:-translate-y-0.5"
-                    >
-                        Build Resume Free
-                    </Link>
+                    {user ? (
+                        <div className="relative" ref={menuRef}>
+                            <button
+                                onClick={() => setShowUserMenu(!showUserMenu)}
+                                className="flex items-center gap-2 hover:bg-slate-100 rounded-lg px-2 py-1.5 transition-all"
+                            >
+                                {user.avatar ? (
+                                    <img
+                                        src={user.avatar}
+                                        alt={user.name}
+                                        className="w-8 h-8 rounded-full object-cover border-2 border-slate-200"
+                                    />
+                                ) : (
+                                    <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold">
+                                        {getUserInitials()}
+                                    </div>
+                                )}
+                                <span className="text-sm font-medium text-slate-700 max-w-[120px] truncate">
+                                    {user.name || user.email}
+                                </span>
+                                <i className={`fa-solid fa-chevron-down text-xs text-slate-400 transition-transform ${showUserMenu ? 'rotate-180' : ''}`}></i>
+                            </button>
+
+                            {/* Dropdown Menu */}
+                            {showUserMenu && (
+                                <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-200 py-2 animate-fade-in">
+                                    {/* User Info */}
+                                    <div className="px-4 py-3 border-b border-slate-100">
+                                        <p className="text-sm font-bold text-slate-900">{user.name}</p>
+                                        <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                                    </div>
+
+                                    {/* Menu Items */}
+                                    <Link
+                                        href="/profile"
+                                        className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors text-sm text-slate-700"
+                                        onClick={() => setShowUserMenu(false)}
+                                    >
+                                        <i className="fa-solid fa-user w-4 text-slate-400"></i>
+                                        Profile
+                                    </Link>
+                                    <Link
+                                        href="/my-resumes"
+                                        className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors text-sm text-slate-700"
+                                        onClick={() => setShowUserMenu(false)}
+                                    >
+                                        <i className="fa-solid fa-file-lines w-4 text-slate-400"></i>
+                                        My Resumes
+                                    </Link>
+                                    <div className="border-t border-slate-100 my-1"></div>
+                                    <button
+                                        onClick={handleLogout}
+                                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 transition-colors text-sm text-red-600"
+                                    >
+                                        <i className="fa-solid fa-right-from-bracket w-4"></i>
+                                        Logout
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <>
+                            <Link href="/login" className="text-sm font-medium text-slate-600 hover:text-slate-900">
+                                Log In
+                            </Link>
+                            <Link
+                                href="/builder"
+                                className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold shadow-lg hover:bg-slate-800 hover:shadow-xl transition-all transform hover:-translate-y-0.5"
+                            >
+                                Build Resume Free
+                            </Link>
+                        </>
+                    )}
                 </div>
 
                 {/* Mobile Menu Button */}
@@ -80,16 +177,51 @@ export default function Header() {
                             Contact
                         </Link>
                         <div className="pt-4 border-t border-slate-200 flex flex-col gap-3">
-                            <Link href="/login" className="text-sm font-medium text-slate-600" onClick={() => setMobileMenuOpen(false)}>
-                                Log In
-                            </Link>
-                            <Link
-                                href="/builder"
-                                className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold text-center shadow-lg"
-                                onClick={() => setMobileMenuOpen(false)}
-                            >
-                                Build Resume Free
-                            </Link>
+                            {user ? (
+                                <>
+                                    <div className="flex items-center gap-3 px-3 py-2 bg-slate-50 rounded-lg">
+                                        {user.avatar ? (
+                                            <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full object-cover" />
+                                        ) : (
+                                            <div className="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center text-sm font-bold">
+                                                {getUserInitials()}
+                                            </div>
+                                        )}
+                                        <div>
+                                            <p className="text-sm font-bold text-slate-900">{user.name}</p>
+                                            <p className="text-xs text-slate-500">{user.email}</p>
+                                        </div>
+                                    </div>
+                                    <Link href="/profile" className="text-sm font-medium text-slate-600" onClick={() => setMobileMenuOpen(false)}>
+                                        Profile
+                                    </Link>
+                                    <Link href="/my-resumes" className="text-sm font-medium text-slate-600" onClick={() => setMobileMenuOpen(false)}>
+                                        My Resumes
+                                    </Link>
+                                    <button
+                                        onClick={() => {
+                                            handleLogout();
+                                            setMobileMenuOpen(false);
+                                        }}
+                                        className="text-sm font-medium text-red-600 text-left"
+                                    >
+                                        Logout
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <Link href="/login" className="text-sm font-medium text-slate-600" onClick={() => setMobileMenuOpen(false)}>
+                                        Log In
+                                    </Link>
+                                    <Link
+                                        href="/builder"
+                                        className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold text-center shadow-lg"
+                                        onClick={() => setMobileMenuOpen(false)}
+                                    >
+                                        Build Resume Free
+                                    </Link>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>

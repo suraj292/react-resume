@@ -1,12 +1,22 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function ProfilePage() {
+    const router = useRouter();
+    const { user, loading, logout } = useAuth();
     const [activeTab, setActiveTab] = useState('personal');
     const [isSaving, setIsSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
+
+    useEffect(() => {
+        if (!loading && !user) {
+            router.push('/login');
+        }
+    }, [user, loading, router]);
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -20,12 +30,42 @@ export default function ProfilePage() {
         setTimeout(() => setSaveSuccess(false), 2000);
     };
 
+    const handleLogout = async () => {
+        await logout();
+        router.push('/login');
+    };
+
+    const getUserInitials = () => {
+        if (!user?.name) return 'U';
+        return user.name
+            .split(' ')
+            .map(n => n[0])
+            .join('')
+            .toUpperCase()
+            .slice(0, 2);
+    };
+
     const tabs = [
         { id: 'personal', label: 'Personal Info', icon: 'fa-regular fa-user' },
         { id: 'security', label: 'Security', icon: 'fa-solid fa-shield-halved' },
         { id: 'preferences', label: 'Preferences', icon: 'fa-solid fa-sliders' },
         { id: 'subscription', label: 'Subscription', icon: 'fa-regular fa-credit-card' },
     ];
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-slate-50">
+                <div className="text-center">
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
+                    <p className="text-slate-600">Loading...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!user) {
+        return null;
+    }
 
     return (
         <div className="flex flex-col min-h-screen">
@@ -51,15 +91,21 @@ export default function ProfilePage() {
 
                     <div className="flex items-center gap-4">
                         <div className="hidden md:block text-right">
-                            <p className="text-xs font-bold text-slate-900">Alex Morgan</p>
-                            <p className="text-[10px] text-slate-500">Pro Member</p>
+                            <p className="text-xs font-bold text-slate-900">{user.name}</p>
+                            <p className="text-[10px] text-slate-500">{user.provider ? `${user.provider} Login` : 'Member'}</p>
                         </div>
                         <div className="relative group cursor-pointer">
-                            <img
-                                src="https://ui-avatars.com/api/?name=Alex+Morgan&background=6366f1&color=fff"
-                                className="w-9 h-9 rounded-full border-2 border-white shadow-sm hover:border-indigo-200 transition-all"
-                                alt="Profile"
-                            />
+                            {user.avatar ? (
+                                <img
+                                    src={user.avatar}
+                                    className="w-9 h-9 rounded-full border-2 border-white shadow-sm hover:border-indigo-200 transition-all object-cover"
+                                    alt="Profile"
+                                />
+                            ) : (
+                                <div className="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold border-2 border-white shadow-sm">
+                                    {getUserInitials()}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -75,22 +121,35 @@ export default function ProfilePage() {
                         {/* Profile Overview */}
                         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 text-center animate-[slideUp_0.5s_ease-out_forwards]">
                             <div className="relative w-24 h-24 mx-auto mb-4 group cursor-pointer">
-                                <img
-                                    src="https://ui-avatars.com/api/?name=Alex+Morgan&background=6366f1&color=fff&size=128"
-                                    className="w-full h-full rounded-full border-4 border-slate-50 shadow-inner"
-                                    alt="Avatar"
-                                />
+                                {user.avatar ? (
+                                    <img
+                                        src={user.avatar}
+                                        className="w-full h-full rounded-full border-4 border-slate-50 shadow-inner object-cover"
+                                        alt="Avatar"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full rounded-full border-4 border-slate-50 shadow-inner bg-indigo-600 text-white flex items-center justify-center text-2xl font-bold">
+                                        {getUserInitials()}
+                                    </div>
+                                )}
                                 <div className="absolute inset-0 bg-slate-900/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white backdrop-blur-[2px]">
                                     <i className="fa-solid fa-camera"></i>
                                 </div>
                             </div>
-                            <h2 className="text-lg font-bold text-slate-900">Alex Morgan</h2>
-                            <p className="text-xs text-slate-500 mb-4">alex.morgan@example.com</p>
+                            <h2 className="text-lg font-bold text-slate-900">{user.name}</h2>
+                            <p className="text-xs text-slate-500 mb-4">{user.email}</p>
 
-                            <div className="inline-block px-3 py-1 bg-indigo-100 text-indigo-700 text-xs font-bold rounded-full mb-4">Pro Plan</div>
+                            {user.provider && (
+                                <div className="inline-block px-3 py-1 bg-indigo-100 text-indigo-700 text-xs font-bold rounded-full mb-4 capitalize">
+                                    {user.provider} Account
+                                </div>
+                            )}
 
-                            <button className="w-full py-2 bg-slate-900 text-white text-xs font-bold rounded-lg hover:bg-slate-800 transition-colors">
-                                Upgrade to Premium
+                            <button
+                                onClick={handleLogout}
+                                className="w-full py-2 bg-slate-900 text-white text-xs font-bold rounded-lg hover:bg-slate-800 transition-colors"
+                            >
+                                Logout
                             </button>
                         </div>
 
@@ -101,8 +160,8 @@ export default function ProfilePage() {
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
                                     className={`w-full text-left px-5 py-3.5 text-sm font-medium flex items-center gap-3 border-l-4 transition-all ${activeTab === tab.id
-                                            ? 'border-indigo-600 bg-indigo-50/50 text-indigo-700'
-                                            : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                                        ? 'border-indigo-600 bg-indigo-50/50 text-indigo-700'
+                                        : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                                         }`}
                                 >
                                     <i className={`${tab.icon} w-5`}></i> {tab.label}

@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { useResumeStore } from '@/lib/stores/resume-store';
 import { useUIStore } from '@/lib/stores/ui-store';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface NavbarProps {
     isSaving: boolean;
@@ -12,9 +14,25 @@ interface NavbarProps {
 }
 
 export function Navbar({ isSaving, isDirty }: NavbarProps) {
+    const router = useRouter();
     const { lastSaved, currentResume } = useResumeStore();
     const { toggleMobileSidebar } = useUIStore();
+    const { user, logout } = useAuth();
     const [isExporting, setIsExporting] = useState(false);
+    const [showUserMenu, setShowUserMenu] = useState(false);
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    // Close menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setShowUserMenu(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const getSaveStatus = () => {
         if (isSaving) return 'Saving...';
@@ -23,6 +41,11 @@ export function Navbar({ isSaving, isDirty }: NavbarProps) {
             return `Draft saved ${formatDistanceToNow(lastSaved, { addSuffix: true })}`;
         }
         return 'All changes saved';
+    };
+
+    const handleLogout = async () => {
+        await logout();
+        router.push('/login');
     };
 
     const handleExportPDF = async () => {
@@ -142,6 +165,16 @@ export function Navbar({ isSaving, isDirty }: NavbarProps) {
         }
     };
 
+    const getUserInitials = () => {
+        if (!user?.name) return 'U';
+        return user.name
+            .split(' ')
+            .map(n => n[0])
+            .join('')
+            .toUpperCase()
+            .slice(0, 2);
+    };
+
     return (
         <nav className="fixed top-0 left-0 right-0 h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 z-50">
             <div className="flex items-center gap-3">
@@ -176,6 +209,76 @@ export function Navbar({ isSaving, isDirty }: NavbarProps) {
                     <span className="hidden sm:inline">{isExporting ? 'Exporting...' : 'Export PDF'}</span>
                     <span className="sm:hidden">{isExporting ? '...' : 'Export'}</span>
                 </button>
+
+                {/* User Menu or Login */}
+                {user ? (
+                    <div className="relative" ref={menuRef}>
+                        <button
+                            onClick={() => setShowUserMenu(!showUserMenu)}
+                            className="flex items-center gap-2 hover:bg-slate-100 rounded-lg px-2 py-1.5 transition-all"
+                        >
+                            {user.avatar ? (
+                                <img
+                                    src={user.avatar}
+                                    alt={user.name}
+                                    className="w-8 h-8 rounded-full object-cover border-2 border-slate-200"
+                                />
+                            ) : (
+                                <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold">
+                                    {getUserInitials()}
+                                </div>
+                            )}
+                            <span className="hidden md:block text-sm font-medium text-slate-700 max-w-[120px] truncate">
+                                {user.name || user.email}
+                            </span>
+                            <i className={`fa-solid fa-chevron-down text-xs text-slate-400 transition-transform ${showUserMenu ? 'rotate-180' : ''}`}></i>
+                        </button>
+
+                        {/* Dropdown Menu */}
+                        {showUserMenu && (
+                            <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-200 py-2 animate-fade-in">
+                                {/* User Info */}
+                                <div className="px-4 py-3 border-b border-slate-100">
+                                    <p className="text-sm font-bold text-slate-900">{user.name}</p>
+                                    <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                                </div>
+
+                                {/* Menu Items */}
+                                <Link
+                                    href="/profile"
+                                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors text-sm text-slate-700"
+                                    onClick={() => setShowUserMenu(false)}
+                                >
+                                    <i className="fa-solid fa-user w-4 text-slate-400"></i>
+                                    Profile
+                                </Link>
+                                <Link
+                                    href="/my-resumes"
+                                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors text-sm text-slate-700"
+                                    onClick={() => setShowUserMenu(false)}
+                                >
+                                    <i className="fa-solid fa-file-lines w-4 text-slate-400"></i>
+                                    My Resumes
+                                </Link>
+                                <div className="border-t border-slate-100 my-1"></div>
+                                <button
+                                    onClick={handleLogout}
+                                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 transition-colors text-sm text-red-600"
+                                >
+                                    <i className="fa-solid fa-right-from-bracket w-4"></i>
+                                    Logout
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <Link
+                        href="/login"
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1.5 rounded-lg font-bold text-xs transition-all"
+                    >
+                        Login
+                    </Link>
+                )}
             </div>
         </nav>
     );
