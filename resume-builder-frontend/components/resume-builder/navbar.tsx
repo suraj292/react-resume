@@ -34,78 +34,105 @@ export function Navbar({ isSaving, isDirty }: NavbarProps) {
                 return;
             }
 
-            // Create a new window for printing
-            const printWindow = window.open('', '_blank');
-            if (!printWindow) {
-                alert('Please allow popups to export PDF');
-                setIsExporting(false);
-                return;
+            // Clone the element to avoid modifying the original
+            const clonedElement = resumeElement.cloneNode(true) as HTMLElement;
+
+            // Remove shadow and transform for PDF
+            clonedElement.style.boxShadow = 'none';
+            clonedElement.style.transform = 'none';
+            clonedElement.classList.remove('shadow-2xl');
+
+            // Get all CSS rules from stylesheets
+            let allStyles = '';
+            try {
+                allStyles = Array.from(document.styleSheets)
+                    .map(styleSheet => {
+                        try {
+                            return Array.from(styleSheet.cssRules)
+                                .map(rule => rule.cssText)
+                                .join('\n');
+                        } catch (e) {
+                            // Skip external stylesheets that cause CORS issues
+                            return '';
+                        }
+                    })
+                    .join('\n');
+            } catch (e) {
+                console.warn('Could not extract all styles:', e);
             }
 
-            // Get computed styles
-            const styles = Array.from(document.styleSheets)
-                .map(styleSheet => {
-                    try {
-                        return Array.from(styleSheet.cssRules)
-                            .map(rule => rule.cssText)
-                            .join('\n');
-                    } catch (e) {
-                        return '';
-                    }
-                })
-                .join('\n');
-
-            // Create print document
-            printWindow.document.write(`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>${currentResume?.personal?.name || 'Resume'}</title>
-                    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-                    <style>
-                        @page {
-                            size: A4;
-                            margin: 0;
-                        }
-                        body {
-                            margin: 0;
-                            padding: 0;
-                            font-family: Arial, sans-serif;
-                        }
-                        @media print {
-                            body {
-                                -webkit-print-color-adjust: exact;
-                                print-color-adjust: exact;
-                            }
-                        }
-                        ${styles}
-                    </style>
-                </head>
-                <body>
-                    ${resumeElement.outerHTML}
-                </body>
-                </html>
-            `);
-
-            printWindow.document.close();
-
-            // Wait for content to load
-            printWindow.onload = () => {
-                setTimeout(() => {
-                    printWindow.print();
-                    printWindow.close();
-                    setIsExporting(false);
-                }, 500);
-            };
-
-            // Fallback if onload doesn't fire
-            setTimeout(() => {
-                if (printWindow && !printWindow.closed) {
-                    printWindow.print();
-                    printWindow.close();
+            // Add PDF-specific styles for proper page breaks
+            const pdfStyles = `
+                @page {
+                    size: A4;
+                    margin: 0;
                 }
-                setIsExporting(false);
-            }, 2000);
+                
+                #resume-sheet {
+                    box-shadow: none !important;
+                    transform: none !important;
+                }
+                
+                /* Hide page break indicators in PDF */
+                .page-break-indicator {
+                    display: none !important;
+                }
+                
+                /* Prevent page breaks inside important elements */
+                h1, h2, h3, h4, h5, h6 {
+                    page-break-after: avoid;
+                    break-after: avoid;
+                }
+                
+                /* Allow page breaks between sections and add padding after breaks */
+                .space-y-8 > * {
+                    page-break-inside: avoid;
+                    break-inside: avoid;
+                }
+            `;
+
+            // Create complete HTML with all styles
+            const completeHtml = `
+                <style>
+                    ${allStyles}
+                    ${pdfStyles}
+                </style>
+                ${clonedElement.outerHTML}
+            `;
+
+            // Generate filename
+            const filename = currentResume?.personal?.name
+                ? `${currentResume.personal.name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}_${new Date().toISOString().split('T')[0]}.pdf`
+                : `resume_${new Date().toISOString().split('T')[0]}.pdf`;
+
+            // Call backend API
+            const response = await fetch('http://localhost:8000/api/export/pdf', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    html: completeHtml,
+                    filename: filename,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to generate PDF');
+            }
+
+            // Download the PDF
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+            setIsExporting(false);
 
         } catch (error) {
             console.error('Error exporting PDF:', error);

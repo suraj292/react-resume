@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useResumeStore } from '@/lib/stores/resume-store';
 
 // Original Templates
@@ -60,6 +60,36 @@ function formatDate(dateString: string | null): string {
 export function PreviewPanel() {
     const { currentResume, updatePersonal, updateField, updateExperience } = useResumeStore();
     const [zoom, setZoom] = useState(100);
+
+    // Add page-break class to child divs at page break positions
+    useEffect(() => {
+        const PAGE_HEIGHTS = [1123, 2246, 3369]; // Page 1, 2, 3 end positions
+        const resumeSheet = document.getElementById('resume-sheet');
+
+        if (!resumeSheet) return;
+
+        // Get direct child divs only
+        const children = Array.from(resumeSheet.children).filter(
+            (el): el is HTMLElement => el.tagName === 'DIV'
+        );
+
+        // Remove existing page-break classes
+        children.forEach(child => child.classList.remove('page-break'));
+
+        // Add page-break class to divs at or crossing page boundaries
+        PAGE_HEIGHTS.forEach(pageHeight => {
+            for (const child of children) {
+                const top = child.offsetTop;
+                const bottom = top + child.offsetHeight;
+
+                // If this div crosses or starts at/after the page break
+                if ((top < pageHeight && bottom >= pageHeight) || top >= pageHeight) {
+                    child.classList.add('page-break');
+                    break; // Only add to the first crossing/after div per page
+                }
+            }
+        });
+    }, [currentResume, zoom]);
 
     if (!currentResume) return null;
 
@@ -247,14 +277,21 @@ export function PreviewPanel() {
 
                 {/* Resume Sheet - All content flows naturally */}
                 <div
-                    id="resume-sheet"
-                    className="bg-white shadow-2xl w-full p-12 mx-auto transition-all duration-500 space-y-8 origin-top"
+                    className="relative mx-auto transition-all duration-500 origin-top"
                     style={{
-                        boxShadow: `0 25px 50px -12px ${accentColor}20`,
                         transform: `scale(${zoom / 100})`,
                     }}
                 >
-                    {renderTemplate()}
+                    <div
+                        id="resume-sheet"
+                        className="bg-white shadow-2xl w-full p-12 space-y-8 relative"
+                        style={{
+                            boxShadow: `0 25px 50px -12px ${accentColor}20`,
+                        }}
+                    >
+                        {renderTemplate()}
+                    </div>
+
                 </div>
 
                 {/* Multi-page indicator */}
@@ -262,11 +299,11 @@ export function PreviewPanel() {
                     <div className="mt-6 text-center">
                         <p className="text-xs text-slate-400 italic">
                             <i className="fa-solid fa-file-lines mr-2" />
-                            Multi-page resume • All content displayed
+                            Multi-page resume detected
                         </p>
                     </div>
                 )}
             </div>
-        </section>
+        </section >
     );
 }
