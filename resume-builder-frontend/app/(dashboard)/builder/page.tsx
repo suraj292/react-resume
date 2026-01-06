@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useParams } from 'next/navigation';
 import { useResumeStore } from '@/lib/stores/resume-store';
 import { useUIStore } from '@/lib/stores/ui-store';
 import { useAutoSave } from '@/hooks/use-auto-save';
@@ -17,8 +16,8 @@ import { MobilePreview } from '@/components/resume-builder/mobile-preview';
 import { Toaster } from 'sonner';
 
 export default function ResumeBuilderPage() {
-    const params = useParams();
-    const resumeId = params.id as string;
+    // Use a default resume ID since we're now at /builder instead of /builder/[id]
+    const resumeId = '1';
 
     const { loadResume, currentResume } = useResumeStore();
     const { activeTab, isMobileSidebarOpen, toggleMobileSidebar } = useUIStore();

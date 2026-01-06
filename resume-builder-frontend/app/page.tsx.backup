@@ -1,0 +1,28 @@
+import Link from 'next/link';
+
+export default function Home() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-slate-100">
+      <div className="text-center">
+        <h1 className="text-4xl font-bold text-slate-900 mb-4">
+          Resume Builder <span className="text-indigo-600">AI</span>
+        </h1>
+        <p className="text-slate-600 mb-8">
+          Production-grade resume builder with auto-save and real-time preview
+        </p>
+        <Link
+          href="/builder"
+          className="inline-block px-6 py-3 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-500 transition-colors"
+        >
+          Open Resume Builder
+        </Link>
+        <div className="mt-8 text-sm text-slate-500">
+          <p>✅ Auto-save every 3 seconds</p>
+          <p>✅ Real-time preview updates</p>
+          <p>✅ Offline support with IndexedDB</p>
+          <p>✅ ETag-based conflict detection</p>
+        </div>
+      </div>
+    </div>
+  );
+}

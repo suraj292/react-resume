@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { useResumeStore } from '@/lib/stores/resume-store';
 import { useUIStore } from '@/lib/stores/ui-store';
@@ -151,13 +152,15 @@ export function Navbar({ isSaving, isDirty }: NavbarProps) {
                 >
                     <i className="fa-solid fa-bars text-base"></i>
                 </button>
+                <Link href="/" className="flex items-center gap-2 group">
+                    <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold italic shadow-indigo-200 shadow-lg">
+                        R
+                    </div>
+                    <span className="font-display font-bold text-lg tracking-tight hidden md:block">
+                        ResumeAI
+                    </span>
+                </Link>
 
-                <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold italic shadow-indigo-200 shadow-lg">
-                    R
-                </div>
-                <span className="font-display font-bold text-lg tracking-tight hidden md:block">
-                    ResumeAI
-                </span>
             </div>
 
             <div className="flex items-center gap-2">
