@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import MarketingLayout from '@/components/layout/marketing-layout';
+import { useAuth } from '@/contexts/AuthContext';
+import AuthRequiredModal from '@/components/auth-required-modal';
 
 export default function ATSCheckerPage() {
     const [activeTab, setActiveTab] = useState('upload');
@@ -10,6 +12,15 @@ export default function ATSCheckerPage() {
     const [showResults, setShowResults] = useState(false);
     const [loadingText, setLoadingText] = useState('Parsing keywords and formatting...');
     const [score, setScore] = useState(0);
+    const { user, loading } = useAuth();
+    const [showAuthModal, setShowAuthModal] = useState(false);
+
+    // Show auth modal if user is not logged in
+    useEffect(() => {
+        if (!loading && !user) {
+            setShowAuthModal(true);
+        }
+    }, [user, loading]);
 
     // Animate score counter
     useEffect(() => {
@@ -120,8 +131,8 @@ export default function ATSCheckerPage() {
                                 <button
                                     onClick={() => setActiveTab('upload')}
                                     className={`flex-1 py-4 text-sm font-bold transition-colors flex items-center justify-center gap-2 ${activeTab === 'upload'
-                                            ? 'text-indigo-600 border-b-2 border-indigo-600 bg-white'
-                                            : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                                        ? 'text-indigo-600 border-b-2 border-indigo-600 bg-white'
+                                        : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
                                         }`}
                                 >
                                     <i className="fa-solid fa-cloud-arrow-up"></i> Upload Resume
@@ -129,8 +140,8 @@ export default function ATSCheckerPage() {
                                 <button
                                     onClick={() => setActiveTab('paste')}
                                     className={`flex-1 py-4 text-sm font-bold transition-colors flex items-center justify-center gap-2 ${activeTab === 'paste'
-                                            ? 'text-indigo-600 border-b-2 border-indigo-600 bg-white'
-                                            : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                                        ? 'text-indigo-600 border-b-2 border-indigo-600 bg-white'
+                                        : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
                                         }`}
                                 >
                                     <i className="fa-solid fa-paste"></i> Paste Text
@@ -490,6 +501,9 @@ export default function ATSCheckerPage() {
 
                 </section>
             )}
+
+            {/* Auth Required Modal */}
+            {showAuthModal && <AuthRequiredModal onClose={() => setShowAuthModal(false)} />}
         </MarketingLayout>
     );
 }

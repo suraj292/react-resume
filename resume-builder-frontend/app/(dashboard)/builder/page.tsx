@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useResumeStore } from '@/lib/stores/resume-store';
 import { useUIStore } from '@/lib/stores/ui-store';
 import { useAutoSave } from '@/hooks/use-auto-save';
+import { useAuth } from '@/contexts/AuthContext';
+import AuthRequiredModal from '@/components/auth-required-modal';
 import { Navbar } from '@/components/resume-builder/navbar';
 import { Sidebar } from '@/components/resume-builder/sidebar';
 import { TabUpload } from '@/components/resume-builder/tabs/tab-upload';
@@ -22,10 +24,19 @@ export default function ResumeBuilderPage() {
     const { loadResume, currentResume } = useResumeStore();
     const { activeTab, isMobileSidebarOpen, toggleMobileSidebar } = useUIStore();
     const { isSaving, isDirty } = useAutoSave(resumeId);
+    const { user, loading } = useAuth();
+    const [showAuthModal, setShowAuthModal] = useState(false);
 
     useEffect(() => {
         loadResume(resumeId);
     }, [resumeId, loadResume]);
+
+    // Show auth modal if user is not logged in
+    useEffect(() => {
+        if (!loading && !user) {
+            setShowAuthModal(true);
+        }
+    }, [user, loading]);
 
     if (!currentResume) {
         return (
@@ -125,6 +136,9 @@ export default function ResumeBuilderPage() {
           transform: scale(0.95);
         }
       `}</style>
+
+            {/* Auth Required Modal */}
+            {showAuthModal && <AuthRequiredModal onClose={() => setShowAuthModal(false)} />}
         </>
     );
 }
