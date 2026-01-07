@@ -213,7 +213,7 @@ export default function ATSCheckerPage() {
                                             />
 
                                             {!fileName ? (
-                                                <div className="text-center group-hover:-translate-y-1 transition-transform duration-300">
+                                                <div className="text-center group-hover:-translate-y-1 transition-transform duration-300 pointer-events-none">
                                                     <div className="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center mx-auto mb-4 text-indigo-600 text-2xl group-hover:scale-110 transition-transform">
                                                         <i className="fa-solid fa-file-arrow-up"></i>
                                                     </div>
@@ -221,7 +221,7 @@ export default function ATSCheckerPage() {
                                                     <p className="text-slate-500 text-sm mt-1">Supports PDF, DOCX, TXT (Max 5MB)</p>
                                                 </div>
                                             ) : (
-                                                <div className="text-center">
+                                                <div className="text-center pointer-events-none">
                                                     <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-green-600 text-2xl animate-bounce">
                                                         <i className="fa-solid fa-check"></i>
                                                     </div>

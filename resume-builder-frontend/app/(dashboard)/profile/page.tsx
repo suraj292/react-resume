@@ -11,6 +11,7 @@ export default function ProfilePage() {
     const [activeTab, setActiveTab] = useState('personal');
     const [isSaving, setIsSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
+    const [showUserMenu, setShowUserMenu] = useState(false);
 
     useEffect(() => {
         if (!loading && !user) {
@@ -49,12 +50,11 @@ export default function ProfilePage() {
         { id: 'personal', label: 'Personal Info', icon: 'fa-regular fa-user' },
         { id: 'security', label: 'Security', icon: 'fa-solid fa-shield-halved' },
         { id: 'preferences', label: 'Preferences', icon: 'fa-solid fa-sliders' },
-        { id: 'subscription', label: 'Subscription', icon: 'fa-regular fa-credit-card' },
     ];
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-50">
+            <div className="flex items-center justify-center min-h-screen">
                 <div className="text-center">
                     <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
                     <p className="text-slate-600">Loading...</p>
@@ -82,28 +82,53 @@ export default function ProfilePage() {
                     </Link>
 
                     <nav className="hidden md:flex items-center gap-8">
-                        <Link href="/builder" className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">Dashboard</Link>
                         <Link href="/builder" className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">Builder</Link>
-                        <Link href="/ats-checker" className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">ATS Check</Link>
-                        <Link href="/" className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">Templates</Link>
+                        <Link href="/ats-checker" className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">ATS Checker</Link>
+                        <Link href="/pricing" className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">Pricing</Link>
                         <Link href="/profile" className="text-sm font-medium text-indigo-600 bg-indigo-50 px-3 py-1 rounded-md">Profile</Link>
                     </nav>
 
                     <div className="flex items-center gap-4">
-                        <div className="hidden md:block text-right">
-                            <p className="text-xs font-bold text-slate-900">{user.name}</p>
-                            <p className="text-[10px] text-slate-500">{user.provider ? `${user.provider} Login` : 'Member'}</p>
-                        </div>
-                        <div className="relative group cursor-pointer">
-                            {user.avatar ? (
-                                <img
-                                    src={user.avatar}
-                                    className="w-9 h-9 rounded-full border-2 border-white shadow-sm hover:border-indigo-200 transition-all object-cover"
-                                    alt="Profile"
-                                />
-                            ) : (
-                                <div className="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold border-2 border-white shadow-sm">
-                                    {getUserInitials()}
+                        <div className="relative">
+                            <button
+                                onClick={() => setShowUserMenu(!showUserMenu)}
+                                className="flex items-center gap-3 hover:bg-slate-50 rounded-lg px-3 py-2 transition-colors"
+                            >
+                                {user.avatar ? (
+                                    <img
+                                        src={user.avatar}
+                                        className="w-9 h-9 rounded-full border-2 border-white shadow-sm object-cover"
+                                        alt="Profile"
+                                    />
+                                ) : (
+                                    <div className="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-bold border-2 border-white shadow-sm">
+                                        {getUserInitials()}
+                                    </div>
+                                )}
+                                <div className="hidden md:block text-left">
+                                    <p className="text-xs font-bold text-slate-900">{user.name}</p>
+                                    <p className="text-[10px] text-slate-500">{user.email}</p>
+                                </div>
+                                <i className="fa-solid fa-chevron-down text-xs text-slate-400"></i>
+                            </button>
+
+                            {showUserMenu && (
+                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-2">
+                                    <Link
+                                        href="/profile"
+                                        className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                                        onClick={() => setShowUserMenu(false)}
+                                    >
+                                        <i className="fa-solid fa-user mr-2"></i>
+                                        Profile
+                                    </Link>
+                                    <button
+                                        onClick={handleLogout}
+                                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                                    >
+                                        <i className="fa-solid fa-right-from-bracket mr-2"></i>
+                                        Logout
+                                    </button>
                                 </div>
                             )}
                         </div>
