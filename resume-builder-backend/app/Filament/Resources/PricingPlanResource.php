@@ -46,22 +46,30 @@ class PricingPlanResource extends Resource
                     ->columns(2),
 
                 Forms\Components\Section::make('Multi-Currency Pricing')
-                    ->description('Set prices for all supported currencies (stored in smallest units: cents for USD/EUR, paise for INR)')
+                    ->description('Set prices for all supported currencies in whole units (will be converted to smallest units for storage)')
                     ->schema([
                         // USD Pricing
                         Forms\Components\Fieldset::make('USD (United States Dollar)')
                             ->schema([
                                 Forms\Components\TextInput::make('monthly_price_usd')
-                                    ->label('Monthly (cents)')
+                                    ->label('Monthly ($)')
                                     ->numeric()
                                     ->default(0)
-                                    ->helperText('e.g., 499 for $4.99')
+                                    ->prefix('$')
+                                    ->helperText('e.g., 4.99 for $4.99')
+                                    ->step(0.01)
+                                    ->dehydrateStateUsing(fn ($state) => $state ? (int)($state * 100) : 0)
+                                    ->formatStateUsing(fn ($state) => $state ? $state / 100 : 0)
                                     ->columnSpan(1),
                                 Forms\Components\TextInput::make('yearly_price_usd')
-                                    ->label('Yearly (cents)')
+                                    ->label('Yearly ($)')
                                     ->numeric()
                                     ->default(0)
-                                    ->helperText('e.g., 4999 for $49.99')
+                                    ->prefix('$')
+                                    ->helperText('e.g., 49.99 for $49.99')
+                                    ->step(0.01)
+                                    ->dehydrateStateUsing(fn ($state) => $state ? (int)($state * 100) : 0)
+                                    ->formatStateUsing(fn ($state) => $state ? $state / 100 : 0)
                                     ->columnSpan(1),
                             ])
                             ->columns(2),
@@ -70,16 +78,24 @@ class PricingPlanResource extends Resource
                         Forms\Components\Fieldset::make('INR (Indian Rupee)')
                             ->schema([
                                 Forms\Components\TextInput::make('monthly_price_inr')
-                                    ->label('Monthly (paise)')
+                                    ->label('Monthly (₹)')
                                     ->numeric()
                                     ->default(0)
-                                    ->helperText('e.g., 49900 for ₹499')
+                                    ->prefix('₹')
+                                    ->helperText('e.g., 499 for ₹499')
+                                    ->step(1)
+                                    ->dehydrateStateUsing(fn ($state) => $state ? (int)($state * 100) : 0)
+                                    ->formatStateUsing(fn ($state) => $state ? $state / 100 : 0)
                                     ->columnSpan(1),
                                 Forms\Components\TextInput::make('yearly_price_inr')
-                                    ->label('Yearly (paise)')
+                                    ->label('Yearly (₹)')
                                     ->numeric()
                                     ->default(0)
-                                    ->helperText('e.g., 499900 for ₹4,999')
+                                    ->prefix('₹')
+                                    ->helperText('e.g., 4999 for ₹4,999')
+                                    ->step(1)
+                                    ->dehydrateStateUsing(fn ($state) => $state ? (int)($state * 100) : 0)
+                                    ->formatStateUsing(fn ($state) => $state ? $state / 100 : 0)
                                     ->columnSpan(1),
                             ])
                             ->columns(2),
@@ -88,16 +104,24 @@ class PricingPlanResource extends Resource
                         Forms\Components\Fieldset::make('EUR (Euro)')
                             ->schema([
                                 Forms\Components\TextInput::make('monthly_price_eur')
-                                    ->label('Monthly (cents)')
+                                    ->label('Monthly (€)')
                                     ->numeric()
                                     ->default(0)
-                                    ->helperText('e.g., 499 for €4.99')
+                                    ->prefix('€')
+                                    ->helperText('e.g., 4.99 for €4.99')
+                                    ->step(0.01)
+                                    ->dehydrateStateUsing(fn ($state) => $state ? (int)($state * 100) : 0)
+                                    ->formatStateUsing(fn ($state) => $state ? $state / 100 : 0)
                                     ->columnSpan(1),
                                 Forms\Components\TextInput::make('yearly_price_eur')
-                                    ->label('Yearly (cents)')
+                                    ->label('Yearly (€)')
                                     ->numeric()
                                     ->default(0)
-                                    ->helperText('e.g., 4999 for €49.99')
+                                    ->prefix('€')
+                                    ->helperText('e.g., 49.99 for €49.99')
+                                    ->step(0.01)
+                                    ->dehydrateStateUsing(fn ($state) => $state ? (int)($state * 100) : 0)
+                                    ->formatStateUsing(fn ($state) => $state ? $state / 100 : 0)
                                     ->columnSpan(1),
                             ])
                             ->columns(2),
