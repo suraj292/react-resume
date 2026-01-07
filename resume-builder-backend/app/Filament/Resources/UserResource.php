@@ -132,16 +132,21 @@ class UserResource extends Resource
                 Tables\Filters\SelectFilter::make('provider')
                     ->label('Auth Type')
                     ->options([
+                        '' => 'Email/Password',
                         'google' => 'Google',
                         'github' => 'GitHub',
                         'facebook' => 'Facebook',
                     ])
-                    ->placeholder('Email Users')
-                    ->query(function (Builder $query, array $data) {
-                        if (empty($data['value'])) {
-                            return $query->whereNull('provider');
+                    ->query(function (Builder $query, array $data): Builder {
+                        if (!isset($data['value']) || $data['value'] === null) {
+                            return $query; // Show all users when no filter selected
                         }
-                        return $query->where('provider', $data['value']);
+                        
+                        if ($data['value'] === '') {
+                            return $query->whereNull('provider'); // Email users
+                        }
+                        
+                        return $query->where('provider', $data['value']); // Social auth users
                     }),
                 Tables\Filters\Filter::make('verified')
                     ->label('Email Verified')
