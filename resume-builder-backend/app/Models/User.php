@@ -49,4 +49,26 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
         ];
     }
+
+    /**
+     * Get the orders for the user.
+     */
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    /**
+     * Get the user's active subscription order.
+     */
+    public function activeSubscription()
+    {
+        return $this->hasOne(Order::class)
+            ->where('payment_status', 'completed')
+            ->where(function ($query) {
+                $query->whereNull('valid_until')
+                    ->orWhere('valid_until', '>', now());
+            })
+            ->latest();
+    }
 }

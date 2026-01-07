@@ -110,6 +110,19 @@ class UserResource extends Resource
                         'heroicon-o-code-bracket' => 'GitHub',
                         'heroicon-o-user-group' => 'Facebook',
                     ]),
+                Tables\Columns\TextColumn::make('current_plan')
+                    ->label('Current Plan')
+                    ->getStateUsing(function ($record) {
+                        $activeOrder = $record->activeSubscription;
+                        if ($activeOrder) {
+                            return $activeOrder->plan_name . ' (' . ucfirst($activeOrder->period) . ')';
+                        }
+                        return 'Free';
+                    })
+                    ->badge()
+                    ->color(fn (string $state): string => $state === 'Free' ? 'gray' : 'success')
+                    ->searchable(false)
+                    ->sortable(false),
                 Tables\Columns\IconColumn::make('email_verified_at')
                     ->label('Verified')
                     ->boolean()
