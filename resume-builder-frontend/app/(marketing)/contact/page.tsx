@@ -4,26 +4,61 @@ import MarketingLayout from '@/components/layout/marketing-layout';
 import Link from 'next/link';
 import { useState, FormEvent } from 'react';
 import { ROUTES } from '@/lib/routes';
+import axios from 'axios';
 
 export default function ContactPage() {
     const [showSuccess, setShowSuccess] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        subject: 'General Inquiry',
+        message: '',
+    });
 
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setIsSubmitting(true);
+        setError(null);
 
-        // Simulate network request
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        try {
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
-        setIsSubmitting(false);
-        setShowSuccess(true);
+            const response = await axios.post(`${API_URL}/contact/enquiry`, formData);
+
+            if (response.data.success) {
+                setIsSubmitting(false);
+                setShowSuccess(true);
+                // Reset form data
+                setFormData({
+                    name: '',
+                    email: '',
+                    subject: 'General Inquiry',
+                    message: '',
+                });
+            }
+        } catch (err: any) {
+            setIsSubmitting(false);
+            if (err.response?.data?.errors) {
+                // Validation errors
+                const errors = Object.values(err.response.data.errors).flat();
+                setError(errors.join(', '));
+            } else {
+                setError('Failed to submit enquiry. Please try again later.');
+            }
+        }
     };
 
     const resetForm = () => {
         setShowSuccess(false);
-        const form = document.getElementById('contactForm') as HTMLFormElement;
-        if (form) form.reset();
+        setError(null);
+        setFormData({
+            name: '',
+            email: '',
+            subject: 'General Inquiry',
+            message: '',
+        });
     };
 
     return (
@@ -132,6 +167,17 @@ export default function ContactPage() {
 
                     {/* Right: Form */}
                     <div className="md:w-7/12 p-8 md:p-10 relative">
+                        {/* Error Message */}
+                        {error && (
+                            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
+                                <i className="fa-solid fa-circle-exclamation text-red-500 mt-0.5"></i>
+                                <div>
+                                    <p className="text-sm font-bold text-red-800">Error</p>
+                                    <p className="text-sm text-red-600">{error}</p>
+                                </div>
+                            </div>
+                        )}
+
                         <form id="contactForm" onSubmit={handleSubmit} className="space-y-6">
                             <div className="grid md:grid-cols-2 gap-6">
                                 {/* Name */}
@@ -142,6 +188,8 @@ export default function ContactPage() {
                                     <input
                                         type="text"
                                         required
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                         className="form-input w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                                         placeholder="John Doe"
                                     />
@@ -154,6 +202,8 @@ export default function ContactPage() {
                                     <input
                                         type="email"
                                         required
+                                        value={formData.email}
+                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                         className="form-input w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                                         placeholder="john@example.com"
                                     />
@@ -164,7 +214,11 @@ export default function ContactPage() {
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Subject</label>
                                 <div className="relative">
-                                    <select className="form-input w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 appearance-none cursor-pointer">
+                                    <select
+                                        value={formData.subject}
+                                        onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                                        className="form-input w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 appearance-none cursor-pointer"
+                                    >
                                         <option>General Inquiry</option>
                                         <option>Technical Support</option>
                                         <option>Billing & Pricing</option>
@@ -185,10 +239,12 @@ export default function ContactPage() {
                                 <textarea
                                     required
                                     rows={4}
+                                    value={formData.message}
+                                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                                     className="form-input w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 resize-none"
                                     placeholder="How can we help you?"
                                 ></textarea>
-                                <p className="text-xs text-slate-400 text-right">0/500 characters</p>
+                                <p className="text-xs text-slate-400 text-right">{formData.message.length}/500 characters</p>
                             </div>
 
                             {/* Submit Button */}
