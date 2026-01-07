@@ -1,0 +1,35 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class Resume extends Model
+{
+    use SoftDeletes;
+
+    protected $fillable = [
+        'user_id',
+        'title',
+        'data',
+        'template_id',
+        'color_id',
+        'etag',
+        'last_saved_at',
+    ];
+
+    protected $casts = [
+        'data' => 'array',
+        'last_saved_at' => 'datetime',
+    ];
+
+    /**
+     * Get the user that owns the resume
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+}
