@@ -67,6 +67,9 @@ export default function Header() {
                     <Link href={ROUTES.PRICING} className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">
                         Pricing
                     </Link>
+                    <Link href={ROUTES.BLOG} className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">
+                        Blog
+                    </Link>
                     <Link href={ROUTES.CONTACT} className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">
                         Contact
                     </Link>
@@ -173,6 +176,9 @@ export default function Header() {
                         </Link>
                         <Link href={ROUTES.PRICING} className="text-sm font-medium text-slate-600" onClick={() => setMobileMenuOpen(false)}>
                             Pricing
+                        </Link>
+                        <Link href={ROUTES.BLOG} className="text-sm font-medium text-slate-600" onClick={() => setMobileMenuOpen(false)}>
+                            Blog
                         </Link>
                         <Link href={ROUTES.CONTACT} className="text-sm font-medium text-slate-600" onClick={() => setMobileMenuOpen(false)}>
                             Contact

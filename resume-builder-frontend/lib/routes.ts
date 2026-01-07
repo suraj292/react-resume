@@ -93,6 +93,7 @@ export const NAVIGATION_GROUPS = {
         { name: 'Builder', href: ROUTES.BUILDER },
         { name: 'ATS Checker', href: ROUTES.ATS_CHECKER },
         { name: 'Pricing', href: ROUTES.PRICING },
+        { name: 'Blog', href: ROUTES.BLOG },
         { name: 'Contact', href: ROUTES.CONTACT },
     ],
 
