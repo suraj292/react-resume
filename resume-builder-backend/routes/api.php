@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\CouponController;
 use App\Http\Controllers\Api\PricingPlanController;
 use App\Http\Controllers\Api\GeolocationController;
 use App\Http\Controllers\Api\UserStatsController;
+use App\Http\Controllers\Api\PaymentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -62,6 +63,12 @@ Route::get('/detect-currency', [GeolocationController::class, 'detectCurrency'])
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/coupons/validate', [CouponController::class, 'validate']);
     Route::post('/coupons/apply', [CouponController::class, 'apply']);
+});
+
+// Payments (Razorpay)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/payments/create-order', [PaymentController::class, 'createOrder']);
+    Route::post('/payments/verify', [PaymentController::class, 'verifyPayment']);
 });
 
 // User Stats (Protected)

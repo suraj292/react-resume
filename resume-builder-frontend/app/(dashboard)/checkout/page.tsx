@@ -19,6 +19,7 @@ export default function CheckoutPage() {
     const [detectedCurrency, setDetectedCurrency] = useState<'USD' | 'INR' | 'EUR'>('INR');
     const [couponDiscount, setCouponDiscount] = useState('0');
     const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+    const [phoneNumber, setPhoneNumber] = useState('');
 
     // Get plan details from URL parameters
     const planSlug = searchParams.get('plan') || 'pro';
@@ -78,6 +79,18 @@ export default function CheckoutPage() {
         }
     }, [user, loading, router]);
 
+    // Load Razorpay script
+    useEffect(() => {
+        const script = document.createElement('script');
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.async = true;
+        document.body.appendChild(script);
+
+        return () => {
+            document.body.removeChild(script);
+        };
+    }, []);
+
     const getUserInitials = () => {
         if (!user?.name) return 'U';
         return user.name
@@ -136,14 +149,99 @@ export default function CheckoutPage() {
         }
     };
 
-    const handlePayment = () => {
+    const handlePayment = async () => {
         setIsProcessing(true);
 
-        // Simulate payment processing
-        setTimeout(() => {
-            alert(`Payment Successful!\n\nAmount: ₹${totalPrice.toFixed(2)}\n\nRedirecting to Resume Builder...`);
-            router.push('/builder');
-        }, 1500);
+        try {
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+            const token = localStorage.getItem('auth_token');
+
+            // Create Razorpay order
+            const orderResponse = await fetch(`${API_URL}/payments/create-order`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    amount: Math.round(totalPrice * 100) / 100, // Round to 2 decimal places
+                    plan_slug: planSlug,
+                    period: period,
+                    coupon_code: couponApplied ? couponCode : null,
+                }),
+            });
+
+            const orderData = await orderResponse.json();
+
+            if (!orderData.success) {
+                throw new Error(orderData.message || 'Failed to create order');
+            }
+
+            // Initialize Razorpay
+            const options = {
+                key: orderData.key_id,
+                amount: orderData.amount,
+                currency: orderData.currency,
+                name: 'ResumeAI',
+                description: `${planName} Plan - ${period === 'yearly' ? 'Yearly' : 'Monthly'}`,
+                order_id: orderData.order_id,
+                handler: async function (response: any) {
+                    try {
+                        // Verify payment on backend
+                        const verifyResponse = await fetch(`${API_URL}/payments/verify`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`,
+                                'Accept': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                                coupon_code: couponApplied ? couponCode : null,
+                                discount_amount: couponApplied ? discountAmount : 0,
+                            }),
+                        });
+
+                        const verifyData = await verifyResponse.json();
+
+                        if (verifyData.success) {
+                            alert(`Payment Successful!\n\nPayment ID: ${response.razorpay_payment_id}\n\nRedirecting to Resume Builder...`);
+                            router.push('/builder');
+                        } else {
+                            throw new Error(verifyData.message || 'Payment verification failed');
+                        }
+                    } catch (error) {
+                        console.error('Payment verification error:', error);
+                        alert('Payment verification failed. Please contact support.');
+                    } finally {
+                        setIsProcessing(false);
+                    }
+                },
+                prefill: {
+                    name: user?.name || '',
+                    email: user?.email || '',
+                },
+                theme: {
+                    color: '#4F46E5',
+                },
+                modal: {
+                    ondismiss: function () {
+                        setIsProcessing(false);
+                    }
+                }
+            };
+
+            const razorpay = new (window as any).Razorpay(options);
+            razorpay.open();
+
+        } catch (error) {
+            console.error('Payment error:', error);
+            alert('Failed to initiate payment. Please try again.');
+            setIsProcessing(false);
+        }
     };
 
     if (loading) {
@@ -239,6 +337,8 @@ export default function CheckoutPage() {
                                     <input
                                         type="tel"
                                         placeholder="+91 98765 43210"
+                                        value={phoneNumber}
+                                        onChange={(e) => setPhoneNumber(e.target.value)}
                                         className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 placeholder-slate-400 transition-all"
                                         required
                                     />
@@ -278,12 +378,13 @@ export default function CheckoutPage() {
 
                                 <button
                                     onClick={handlePayment}
-                                    disabled={isProcessing}
+                                    disabled={isProcessing || !phoneNumber.trim()}
                                     className="w-full sm:w-auto px-8 py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 hover:shadow-indigo-500/30 transition-all transform active:scale-95 flex items-center justify-center gap-2 mx-auto disabled:opacity-75 disabled:cursor-not-allowed"
                                 >
                                     {isProcessing ? (
                                         <>
-                                            <i className="fa-solid fa-circle-notch fa-spin"></i> Processing...
+                                            <i className="fa-solid fa-circle-notch fa-spin"></i>
+                                            Processing...
                                         </>
                                     ) : (
                                         <>
