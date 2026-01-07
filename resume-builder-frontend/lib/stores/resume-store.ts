@@ -426,7 +426,7 @@ export const useResumeStore = create<ResumeStore>()(
                         }
 
                         const response = await fetch(`/api/resumes/${currentResume.id}`, {
-                            method: 'PATCH',
+                            method: 'PUT',
                             headers,
                             body: JSON.stringify(payload),
                         });

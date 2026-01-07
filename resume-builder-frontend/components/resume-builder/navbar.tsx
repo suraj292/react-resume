@@ -129,12 +129,20 @@ export function Navbar({ isSaving, isDirty }: NavbarProps) {
                 ? `${currentResume.personal.name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}_${new Date().toISOString().split('T')[0]}.pdf`
                 : `resume_${new Date().toISOString().split('T')[0]}.pdf`;
 
+            // Get auth token
+            const token = localStorage.getItem('auth_token');
+            const headers: HeadersInit = {
+                'Content-Type': 'application/json',
+            };
+
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
             // Call backend API
             const response = await fetch('http://localhost:8000/api/export/pdf', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers,
                 body: JSON.stringify({
                     html: completeHtml,
                     filename: filename,

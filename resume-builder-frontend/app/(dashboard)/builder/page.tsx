@@ -15,6 +15,7 @@ import { TabTemplates } from '@/components/resume-builder/tabs/tab-templates';
 import { TabColors } from '@/components/resume-builder/tabs/tab-colors';
 import { PreviewPanel } from '@/components/resume-builder/preview-panel';
 import { MobilePreview } from '@/components/resume-builder/mobile-preview';
+import { MobileBottomNav } from '@/components/resume-builder/mobile-bottom-nav';
 import { Toaster } from 'sonner';
 
 export default function ResumeBuilderPage() {
@@ -72,8 +73,8 @@ export default function ResumeBuilderPage() {
                 {/* Main Content Area */}
                 <main className="flex-1 flex overflow-hidden">
                     {/* Editor Content (Left) */}
-                    <section className="flex-1 lg:flex-[0.8] bg-white overflow-y-auto custom-scrollbar border-r border-slate-200 w-full">
-                        <div className="max-w-xl mx-auto py-6 sm:py-10 px-4 sm:px-6 pb-24 lg:pb-10">
+                    <section className="flex-1 lg:flex-[3] bg-white overflow-y-auto custom-scrollbar border-r border-slate-200 w-full">
+                        <div className="max-w-xl mx-auto py-6 sm:py-10 px-4 sm:px-6 pb-32 lg:pb-10">
                             {activeTab === 'upload' && <TabUpload />}
                             {activeTab === 'manual' && <TabManual />}
                             {activeTab === 'ai' && <TabAI />}
@@ -89,6 +90,9 @@ export default function ResumeBuilderPage() {
 
             {/* Mobile Preview Modal */}
             <MobilePreview />
+
+            {/* Mobile Bottom Navigation */}
+            <MobileBottomNav />
 
             {/* Floating Preview Button (Mobile) */}
             <button
@@ -112,7 +116,7 @@ export default function ResumeBuilderPage() {
         }
         .preview-fab {
           position: fixed;
-          bottom: 80px;
+          bottom: 100px;
           right: 20px;
           width: 56px;
           height: 56px;

@@ -23,7 +23,15 @@ export function UploadProgress({ uploadId, onComplete, onError }: UploadProgress
     const { data: status, isLoading } = useQuery<UploadStatus>({
         queryKey: ['upload-status', uploadId],
         queryFn: async () => {
-            const response = await fetch(`/api/uploads/${uploadId}/status`);
+            // Get auth token
+            const token = localStorage.getItem('auth_token');
+            const headers: HeadersInit = {};
+
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            const response = await fetch(`/api/uploads/${uploadId}/status`, { headers });
             if (!response.ok) throw new Error('Failed to fetch status');
             return response.json();
         },

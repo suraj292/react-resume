@@ -249,7 +249,7 @@ export function PreviewPanel() {
     };
 
     return (
-        <section className="hidden lg:flex lg:flex-[1.2] bg-slate-50 overflow-y-auto custom-scrollbar p-8">
+        <section className="hidden lg:flex lg:flex-[7] bg-slate-50 overflow-y-auto custom-scrollbar p-8">
             <div className="w-full max-w-2xl mx-auto">
                 {/* Preview Header */}
                 <div className="flex items-center justify-between mb-6">
