@@ -1,26 +1,75 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import Header from '@/components/layout/header';
 
 export default function CheckoutPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { user, loading } = useAuth();
     const [gstNumber, setGstNumber] = useState('');
     const [couponCode, setCouponCode] = useState('');
     const [couponApplied, setCouponApplied] = useState(false);
     const [couponError, setCouponError] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
+    const [pricingPlans, setPricingPlans] = useState<any[]>([]);
+    const [detectedCurrency, setDetectedCurrency] = useState<'USD' | 'INR' | 'EUR'>('INR');
+    const [couponDiscount, setCouponDiscount] = useState('0');
+    const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
 
-    // Price calculations
-    const basePrice = 499.00;
+    // Get plan details from URL parameters
+    const planSlug = searchParams.get('plan') || 'pro';
+    const period = searchParams.get('period') || 'monthly';
+
+    // Plan name mapping
+    const planNames: { [key: string]: string } = {
+        'free': 'Free',
+        'pro': 'Pro',
+        'career-plus': 'Career+'
+    };
+
+    const planName = planNames[planSlug] || 'Pro';
+
+    // Fetch pricing plans from API
+    useEffect(() => {
+        const fetchPricingData = async () => {
+            try {
+                const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+
+                // Detect currency
+                const currencyResponse = await fetch(`${API_URL}/detect-currency`);
+                const currencyData = await currencyResponse.json();
+                setDetectedCurrency(currencyData.currency);
+
+                // Fetch pricing plans
+                const plansResponse = await fetch(`${API_URL}/pricing-plans`);
+                const plansData = await plansResponse.json();
+                setPricingPlans(plansData);
+            } catch (error) {
+                console.error('Failed to fetch pricing data:', error);
+            }
+        };
+
+        fetchPricingData();
+    }, []);
+
+    // Find the selected plan
+    const selectedPlan = pricingPlans.find(p => p.slug === planSlug);
+
+    // Get price based on period and currency
+    const currencyKey = detectedCurrency.toLowerCase() as 'usd' | 'inr' | 'eur';
+    const basePrice = selectedPlan
+        ? (period === 'yearly'
+            ? selectedPlan.pricing[currencyKey].yearly / 100
+            : selectedPlan.pricing[currencyKey].monthly / 100)
+        : 0;
     const gstRate = 0.18;
     const gstAmount = basePrice * gstRate;
     const subtotal = basePrice + gstAmount;
-    const discountAmount = couponApplied ? basePrice * 0.20 : 0;
+    const discountAmount = couponApplied ? (selectedPlan ? parseFloat(couponDiscount) : 0) : 0;
     const totalPrice = subtotal - discountAmount;
 
     useEffect(() => {
@@ -39,18 +88,51 @@ export default function CheckoutPage() {
             .slice(0, 2);
     };
 
-    const applyCoupon = () => {
+    const applyCoupon = async () => {
         const code = couponCode.trim().toUpperCase();
         setCouponError('');
+        setIsValidatingCoupon(true);
 
-        if (!code) return;
+        if (!code) {
+            setIsValidatingCoupon(false);
+            return;
+        }
 
-        if (code === 'SAVE20') {
-            setCouponApplied(true);
-            setCouponError('');
-        } else {
+        try {
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+            const token = localStorage.getItem('auth_token');
+
+            const response = await fetch(`${API_URL}/coupons/validate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    code: code,
+                    amount: basePrice,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.valid) {
+                setCouponApplied(true);
+                setCouponDiscount(data.discount_amount.toString());
+                setCouponError('');
+            } else {
+                setCouponApplied(false);
+                setCouponDiscount('0');
+                setCouponError(data.message || 'Invalid coupon code. Please try again.');
+            }
+        } catch (error) {
+            console.error('Coupon validation error:', error);
             setCouponApplied(false);
-            setCouponError('Invalid coupon code. Please try again.');
+            setCouponDiscount('0');
+            setCouponError('Failed to validate coupon. Please try again.');
+        } finally {
+            setIsValidatingCoupon(false);
         }
     };
 
@@ -111,7 +193,7 @@ export default function CheckoutPage() {
                             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                                 <div>
                                     <h3 className="text-lg font-bold text-slate-900 mb-1">
-                                        Pro Plan <span className="text-slate-400 font-normal mx-2">|</span> Monthly
+                                        {planName} Plan <span className="text-slate-400 font-normal mx-2">|</span> {period === 'yearly' ? 'Yearly' : 'Monthly'}
                                     </h3>
                                     <p className="text-sm text-slate-500">Unlimited resumes, AI optimization, PDF downloads</p>
                                 </div>
@@ -148,6 +230,18 @@ export default function CheckoutPage() {
                                             readOnly
                                         />
                                     </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
+                                        Phone Number <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="tel"
+                                        placeholder="+91 98765 43210"
+                                        className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 placeholder-slate-400 transition-all"
+                                        required
+                                    />
                                 </div>
 
                                 <div>
@@ -213,7 +307,7 @@ export default function CheckoutPage() {
 
                             <div className="space-y-4 mb-6">
                                 <div className="flex justify-between text-sm text-slate-600">
-                                    <span>Pro Plan (Monthly)</span>
+                                    <span>{planName} Plan ({period === 'yearly' ? 'Yearly' : 'Monthly'})</span>
                                     <span className="font-medium text-slate-900">₹{basePrice.toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between text-sm text-slate-600">
@@ -250,9 +344,17 @@ export default function CheckoutPage() {
                                     />
                                     <button
                                         onClick={applyCoupon}
-                                        className="absolute right-1.5 top-1.5 bottom-1.5 px-4 bg-slate-900 text-white text-xs font-bold rounded-md hover:bg-slate-800 transition-colors"
+                                        disabled={isValidatingCoupon || !couponCode.trim()}
+                                        className="absolute right-1.5 top-1.5 bottom-1.5 px-4 bg-slate-900 text-white text-xs font-bold rounded-md hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                     >
-                                        Apply
+                                        {isValidatingCoupon ? (
+                                            <>
+                                                <i className="fa-solid fa-circle-notch fa-spin"></i>
+                                                Checking...
+                                            </>
+                                        ) : (
+                                            'Apply'
+                                        )}
                                     </button>
                                 </div>
                                 {couponApplied && (

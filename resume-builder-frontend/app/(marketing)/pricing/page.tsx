@@ -184,12 +184,12 @@ export default function PricingPage() {
                                         </div>
 
                                         <Link
-                                            href={plan.button_link}
+                                            href={`/checkout?plan=${plan.slug}&period=${isYearly ? 'yearly' : 'monthly'}`}
                                             className={`block w-full py-3 px-4 font-bold text-center rounded-xl transition-colors mb-8 transform hover:scale-105 active:scale-95 ${isDark
-                                                    ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/25'
-                                                    : plan.pricing.inr.monthly === 0
-                                                        ? 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                                                        : 'bg-white border-2 border-slate-900 hover:bg-slate-50 text-slate-900'
+                                                ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/25'
+                                                : plan.pricing.inr.monthly === 0
+                                                    ? 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                                                    : 'bg-white border-2 border-slate-900 hover:bg-slate-50 text-slate-900'
                                                 }`}
                                         >
                                             {plan.button_text}
@@ -204,12 +204,12 @@ export default function PricingPage() {
                                                         }`}
                                                 >
                                                     <i className={`fa-solid ${feature.included
-                                                            ? isDark
-                                                                ? 'fa-check text-indigo-400'
-                                                                : plan.pricing[detectedCurrency.toLowerCase() as 'usd' | 'inr' | 'eur'].monthly === 0
-                                                                    ? 'fa-check text-green-500'
-                                                                    : 'fa-check text-indigo-600'
-                                                            : 'fa-xmark'
+                                                        ? isDark
+                                                            ? 'fa-check text-indigo-400'
+                                                            : plan.pricing[detectedCurrency.toLowerCase() as 'usd' | 'inr' | 'eur'].monthly === 0
+                                                                ? 'fa-check text-green-500'
+                                                                : 'fa-check text-indigo-600'
+                                                        : 'fa-xmark'
                                                         }`}></i>
                                                     {feature.text.includes('Everything in') ? (
                                                         <strong>{feature.text}</strong>

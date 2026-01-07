@@ -9,6 +9,10 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\SocialAuthController;
 use App\Http\Controllers\Api\EmailVerificationController;
 use App\Http\Controllers\Api\ATSController;
+use App\Http\Controllers\Api\CouponController;
+use App\Http\Controllers\Api\PricingPlanController;
+use App\Http\Controllers\Api\GeolocationController;
+use App\Http\Controllers\Api\UserStatsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -49,10 +53,21 @@ Route::post('uploads/job-description', [UploadController::class, 'parseJobDescri
 Route::post('export/pdf', [PdfExportController::class, 'export']);
 
 // Pricing Plans
-Route::get('pricing-plans', [App\Http\Controllers\Api\PricingPlanController::class, 'index']);
+Route::get('/pricing-plans', [PricingPlanController::class, 'index']);
 
 // Geolocation - Detect currency from IP
-Route::get('detect-currency', [App\Http\Controllers\Api\GeolocationController::class, 'detectCurrency']);
+Route::get('/detect-currency', [GeolocationController::class, 'detectCurrency']);
+
+// Coupons
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/coupons/validate', [CouponController::class, 'validate']);
+    Route::post('/coupons/apply', [CouponController::class, 'apply']);
+});
+
+// User Stats (Protected)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/user/stats', [UserStatsController::class, 'index']);
+});
 
 // ATS Analysis
 Route::prefix('ats')->group(function () {
