@@ -1,8 +1,85 @@
+'use client';
+
 import MarketingLayout from '@/components/layout/marketing-layout';
 import Link from 'next/link';
 import { RevealOnScroll } from '@/components/reveal-on-scroll';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+
+interface PricingFeature {
+    text: string;
+    included: boolean;
+}
+
+interface PricingPlan {
+    id: number;
+    name: string;
+    slug: string;
+    description: string;
+    currency: string;
+    features: PricingFeature[];
+    is_popular: boolean;
+    button_text: string;
+    button_link: string;
+    badge_text: string | null;
+    theme: string;
+    pricing: {
+        usd: {
+            monthly: number;
+            yearly: number;
+            formatted_monthly: string;
+            formatted_yearly: string;
+        };
+        inr: {
+            monthly: number;
+            yearly: number;
+            formatted_monthly: string;
+            formatted_yearly: string;
+        };
+        eur: {
+            monthly: number;
+            yearly: number;
+            formatted_monthly: string;
+            formatted_yearly: string;
+        };
+    };
+    limits: {
+        max_resumes: number | null;
+        max_templates: number | null;
+        max_downloads_per_month: number | null;
+        max_ai_requests_per_month: number | null;
+        can_export_pdf: boolean;
+        can_export_docx: boolean;
+    };
+}
 
 export default function HomePage() {
+    const [pricingPlans, setPricingPlans] = useState<PricingPlan[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [detectedCurrency, setDetectedCurrency] = useState<'USD' | 'INR' | 'EUR'>('INR');
+
+    useEffect(() => {
+        const fetchPricingData = async () => {
+            try {
+                const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+
+                // Detect currency from IP
+                const currencyResponse = await axios.get(`${API_URL}/detect-currency`);
+                setDetectedCurrency(currencyResponse.data.currency);
+
+                // Fetch pricing plans
+                const plansResponse = await axios.get(`${API_URL}/pricing-plans`);
+                setPricingPlans(plansResponse.data);
+            } catch (error) {
+                console.error('Failed to fetch pricing data:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchPricingData();
+    }, []);
+
     return (
         <MarketingLayout>
             <RevealOnScroll />
@@ -373,45 +450,71 @@ export default function HomePage() {
             {/* Pricing Preview */}
             <section className="py-24 bg-white">
                 <div className="container mx-auto px-6 max-w-4xl text-center">
-                    <h2 className="text-3xl font-display font-bold text-slate-900 mb-12 reveal">Plans for every career stage</h2>
+                    <h2 className="text-3xl font-display font-bold text-slate-900 mb-12">Plans for every career stage</h2>
 
-                    <div className="grid md:grid-cols-3 gap-6 items-center">
-                        <div className="p-6 border border-slate-200 rounded-xl text-slate-500 reveal hover:border-indigo-200 transition-colors">
-                            <h3 className="font-bold text-lg mb-2">Free</h3>
-                            <p className="text-3xl font-bold text-slate-900 mb-4">₹0</p>
-                            <ul className="text-sm space-y-2 mb-6">
-                                <li>1 Resume</li>
-                                <li>Basic Templates</li>
-                                <li>PDF Export</li>
-                            </ul>
+                    {loading ? (
+                        <div className="text-center py-10">
+                            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+                            <p className="mt-4 text-slate-600">Loading pricing...</p>
                         </div>
+                    ) : (
+                        <div className="grid md:grid-cols-3 gap-6 items-center">
+                            {pricingPlans.map((plan, index) => {
+                                const isDark = plan.theme === 'dark';
 
-                        <div className="p-8 bg-slate-900 text-white rounded-2xl shadow-xl transform scale-105 relative reveal delay-100 hover:scale-110 transition-transform duration-300">
-                            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-indigo-500 text-xs font-bold px-3 py-1 rounded-full animate-bounce">POPULAR</div>
-                            <h3 className="font-bold text-xl mb-2">Pro</h3>
-                            <p className="text-4xl font-bold mb-4">₹499</p>
-                            <p className="text-indigo-200 text-sm mb-6">/month</p>
-                            <ul className="text-sm space-y-3 mb-8 text-slate-300">
-                                <li>Unlimited Resumes</li>
-                                <li>AI Optimization</li>
-                                <li>ATS Checker</li>
-                                <li>All Templates</li>
-                            </ul>
-                            <Link href="/pricing" className="block w-full py-3 bg-indigo-600 rounded-xl font-bold hover:bg-indigo-500 transition-colors shadow-lg hover:shadow-indigo-500/50">
-                                View Plans
-                            </Link>
-                        </div>
+                                const handlePlanClick = () => {
+                                    // Check if user is authenticated
+                                    const token = localStorage.getItem('auth_token');
 
-                        <div className="p-6 border border-slate-200 rounded-xl text-slate-500 reveal delay-200 hover:border-indigo-200 transition-colors">
-                            <h3 className="font-bold text-lg mb-2">Premium</h3>
-                            <p className="text-3xl font-bold text-slate-900 mb-4">₹999</p>
-                            <ul className="text-sm space-y-2 mb-6">
-                                <li>Everything in Pro</li>
-                                <li>Cover Letters</li>
-                                <li>Personal Branding</li>
-                            </ul>
+                                    if (!token) {
+                                        // Redirect to login with return URL
+                                        window.location.href = `/login?redirect=/checkout?plan=${plan.slug}&period=monthly`;
+                                    } else {
+                                        // Redirect to checkout
+                                        window.location.href = `/checkout?plan=${plan.slug}&period=monthly`;
+                                    }
+                                };
+
+                                return (
+                                    <div
+                                        key={plan.id}
+                                        onClick={handlePlanClick}
+                                        className={`p-6 rounded-xl transition-all opacity-100 cursor-pointer ${isDark
+                                                ? 'bg-slate-900 text-white shadow-xl transform scale-105 relative hover:scale-110 duration-300'
+                                                : 'border border-slate-200 text-slate-500 hover:border-indigo-200 hover:shadow-md'
+                                            }`}
+                                    >
+                                        {plan.badge_text && (
+                                            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-indigo-500 text-xs font-bold px-3 py-1 rounded-full animate-bounce">
+                                                {plan.badge_text}
+                                            </div>
+                                        )}
+                                        <h3 className={`font-bold ${isDark ? 'text-xl' : 'text-lg'} mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                            {plan.name}
+                                        </h3>
+                                        <p className={`font-bold mb-4 ${isDark ? 'text-4xl' : 'text-3xl'} ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                            {plan.pricing[detectedCurrency.toLowerCase() as 'usd' | 'inr' | 'eur'].formatted_monthly}
+                                        </p>
+                                        {plan.pricing.inr.monthly > 0 && (
+                                            <p className={`text-sm mb-6 ${isDark ? 'text-indigo-200' : 'text-slate-500'}`}>
+                                                /month
+                                            </p>
+                                        )}
+                                        <ul className={`text-sm ${isDark ? 'space-y-3 mb-8 text-slate-300' : 'space-y-2 mb-6 text-slate-600'}`}>
+                                            {plan.features.slice(0, isDark ? 4 : 3).map((feature, idx) => (
+                                                <li key={idx}>{feature.text}</li>
+                                            ))}
+                                        </ul>
+                                        {isDark && (
+                                            <div className="block w-full py-3 bg-indigo-600 rounded-xl font-bold hover:bg-indigo-500 transition-colors shadow-lg hover:shadow-indigo-500/50 text-white">
+                                                Get Started
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
-                    </div>
+                    )}
                 </div>
             </section>
 
