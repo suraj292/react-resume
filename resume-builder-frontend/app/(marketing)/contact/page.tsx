@@ -4,7 +4,7 @@ import MarketingLayout from '@/components/layout/marketing-layout';
 import Link from 'next/link';
 import { useState, FormEvent } from 'react';
 import { ROUTES } from '@/lib/routes';
-import axios from 'axios';
+import { contactAPI } from '@/lib/api';
 
 export default function ContactPage() {
     const [showSuccess, setShowSuccess] = useState(false);
@@ -23,9 +23,7 @@ export default function ContactPage() {
         setError(null);
 
         try {
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
-
-            const response = await axios.post(`${API_URL}/contact/enquiry`, formData);
+            const response = await contactAPI.submitEnquiry(formData);
 
             if (response.data.success) {
                 setIsSubmitting(false);

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import Header from '@/components/layout/header';
+import { pricingAPI, couponAPI, paymentAPI } from '@/lib/api';
 
 export default function CheckoutPage() {
     const router = useRouter();
@@ -38,17 +39,13 @@ export default function CheckoutPage() {
     useEffect(() => {
         const fetchPricingData = async () => {
             try {
-                const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
-
                 // Detect currency
-                const currencyResponse = await fetch(`${API_URL}/detect-currency`);
-                const currencyData = await currencyResponse.json();
-                setDetectedCurrency(currencyData.currency);
+                const currencyResponse = await pricingAPI.detectCurrency();
+                setDetectedCurrency(currencyResponse.data.currency);
 
                 // Fetch pricing plans
-                const plansResponse = await fetch(`${API_URL}/pricing-plans`);
-                const plansData = await plansResponse.json();
-                setPricingPlans(plansData);
+                const plansResponse = await pricingAPI.getPlans();
+                setPricingPlans(plansResponse.data);
             } catch (error) {
                 console.error('Failed to fetch pricing data:', error);
             }
@@ -112,25 +109,10 @@ export default function CheckoutPage() {
         }
 
         try {
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
-            const token = localStorage.getItem('auth_token');
+            const response = await couponAPI.validate(code, basePrice);
+            const data = response.data;
 
-            const response = await fetch(`${API_URL}/coupons/validate`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({
-                    code: code,
-                    amount: basePrice,
-                }),
-            });
-
-            const data = await response.json();
-
-            if (response.ok && data.valid) {
+            if (data.valid) {
                 setCouponApplied(true);
                 setCouponDiscount(data.discount_amount.toString());
                 setCouponError('');
@@ -139,11 +121,11 @@ export default function CheckoutPage() {
                 setCouponDiscount('0');
                 setCouponError(data.message || 'Invalid coupon code. Please try again.');
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Coupon validation error:', error);
             setCouponApplied(false);
             setCouponDiscount('0');
-            setCouponError('Failed to validate coupon. Please try again.');
+            setCouponError(error.response?.data?.message || 'Failed to validate coupon. Please try again.');
         } finally {
             setIsValidatingCoupon(false);
         }
@@ -153,31 +135,20 @@ export default function CheckoutPage() {
         setIsProcessing(true);
 
         try {
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
-            const token = localStorage.getItem('auth_token');
-
             // Create Razorpay order
-            const orderResponse = await fetch(`${API_URL}/payments/create-order`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({
-                    amount: Math.round(totalPrice * 100) / 100,
-                    plan_slug: planSlug,
-                    plan_name: planName,
-                    period: period,
-                    base_price: basePrice,
-                    gst_amount: gstAmount,
-                    discount_amount: couponApplied ? discountAmount : 0,
-                    coupon_code: couponApplied ? couponCode : null,
-                    phone_number: phoneNumber,
-                }),
+            const orderResponse = await paymentAPI.createOrder({
+                amount: Math.round(totalPrice * 100) / 100,
+                plan_slug: planSlug,
+                plan_name: planName,
+                period: period,
+                base_price: basePrice,
+                gst_amount: gstAmount,
+                discount_amount: couponApplied ? discountAmount : 0,
+                coupon_code: couponApplied ? couponCode : null,
+                phone_number: phoneNumber,
             });
 
-            const orderData = await orderResponse.json();
+            const orderData = orderResponse.data;
 
             if (!orderData.success) {
                 throw new Error(orderData.message || 'Failed to create order');
@@ -194,23 +165,15 @@ export default function CheckoutPage() {
                 handler: async function (response: any) {
                     try {
                         // Verify payment on backend
-                        const verifyResponse = await fetch(`${API_URL}/payments/verify`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${token}`,
-                                'Accept': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                razorpay_order_id: response.razorpay_order_id,
-                                razorpay_payment_id: response.razorpay_payment_id,
-                                razorpay_signature: response.razorpay_signature,
-                                coupon_code: couponApplied ? couponCode : null,
-                                discount_amount: couponApplied ? discountAmount : 0,
-                            }),
+                        const verifyResponse = await paymentAPI.verifyPayment({
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature: response.razorpay_signature,
+                            coupon_code: couponApplied ? couponCode : null,
+                            discount_amount: couponApplied ? discountAmount : 0,
                         });
 
-                        const verifyData = await verifyResponse.json();
+                        const verifyData = verifyResponse.data;
 
                         if (verifyData.success) {
                             alert(`Payment Successful!\n\nPayment ID: ${response.razorpay_payment_id}\n\nRedirecting to Resume Builder...`);
@@ -242,9 +205,9 @@ export default function CheckoutPage() {
             const razorpay = new (window as any).Razorpay(options);
             razorpay.open();
 
-        } catch (error) {
+        } catch (error: any) {
             console.error('Payment error:', error);
-            alert('Failed to initiate payment. Please try again.');
+            alert(error.response?.data?.message || 'Failed to initiate payment. Please try again.');
             setIsProcessing(false);
         }
     };

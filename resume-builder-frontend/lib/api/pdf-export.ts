@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { pdfAPI } from '@/lib/api';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
@@ -11,17 +11,7 @@ export interface ExportPdfRequest {
  * Export resume to PDF using backend API
  */
 export async function exportResumeToPdf(data: ExportPdfRequest): Promise<Blob> {
-    const response = await axios.post(
-        `${API_BASE_URL}/export/pdf`,
-        data,
-        {
-            responseType: 'blob',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        }
-    );
-
+    const response = await pdfAPI.export(data);
     return response.data;
 }
 

@@ -4,9 +4,9 @@ import MarketingLayout from '@/components/layout/marketing-layout';
 import Link from 'next/link';
 import { RevealOnScroll } from '@/components/reveal-on-scroll';
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import { ROUTES, isAuthenticated } from '@/lib/routes';
 import { useRouter } from 'next/navigation';
+import { pricingAPI } from '@/lib/api';
 
 interface PricingFeature {
     text: string;
@@ -18,41 +18,19 @@ interface PricingPlan {
     name: string;
     slug: string;
     description: string;
-    currency: string;
+    pricing: {
+        usd: { monthly: number; yearly: number; formatted_monthly: string; formatted_yearly: string };
+        inr: { monthly: number; yearly: number; formatted_monthly: string; formatted_yearly: string };
+        eur: { monthly: number; yearly: number; formatted_monthly: string; formatted_yearly: string };
+    };
     features: PricingFeature[];
-    is_popular: boolean;
     button_text: string;
     button_link: string;
     badge_text: string | null;
-    theme: string;
-    pricing: {
-        usd: {
-            monthly: number;
-            yearly: number;
-            formatted_monthly: string;
-            formatted_yearly: string;
-        };
-        inr: {
-            monthly: number;
-            yearly: number;
-            formatted_monthly: string;
-            formatted_yearly: string;
-        };
-        eur: {
-            monthly: number;
-            yearly: number;
-            formatted_monthly: string;
-            formatted_yearly: string;
-        };
-    };
-    limits: {
-        max_resumes: number | null;
-        max_templates: number | null;
-        max_downloads_per_month: number | null;
-        max_ai_requests_per_month: number | null;
-        can_export_pdf: boolean;
-        can_export_docx: boolean;
-    };
+    theme: 'light' | 'dark';
+    is_popular: boolean;
+    is_active: boolean;
+    sort_order: number;
 }
 
 export default function HomePage() {
@@ -64,14 +42,12 @@ export default function HomePage() {
     useEffect(() => {
         const fetchPricingData = async () => {
             try {
-                const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
-
                 // Detect currency from IP
-                const currencyResponse = await axios.get(`${API_URL}/detect-currency`);
+                const currencyResponse = await pricingAPI.detectCurrency();
                 setDetectedCurrency(currencyResponse.data.currency);
 
                 // Fetch pricing plans
-                const plansResponse = await axios.get(`${API_URL}/pricing-plans`);
+                const plansResponse = await pricingAPI.getPlans();
                 setPricingPlans(plansResponse.data);
             } catch (error) {
                 console.error('Failed to fetch pricing data:', error);

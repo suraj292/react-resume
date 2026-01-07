@@ -6,6 +6,7 @@ import { useUIStore } from '@/lib/stores/ui-store';
 import { useResumeStore } from '@/lib/stores/resume-store';
 import { FileUploadZone } from '../file-upload-zone';
 import { UploadProgress } from '../upload-progress';
+import { uploadAPI } from '@/lib/api';
 
 export function TabUpload() {
     const { resumeInputMode, jobInputMode, setResumeInputMode, setJobInputMode, setActiveTab } = useUIStore();
@@ -20,30 +21,10 @@ export function TabUpload() {
     // Handle resume file upload
     const handleResumeFileSelect = async (file: File) => {
         setIsUploading(true);
-        const formData = new FormData();
-        formData.append('file', file);
 
         try {
-            // Get auth token
-            const token = localStorage.getItem('auth_token');
-            const headers: HeadersInit = {};
-
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-            }
-
-            const response = await fetch('/api/uploads/resume', {
-                method: 'POST',
-                headers,
-                body: formData,
-            });
-
-            if (!response.ok) {
-                throw new Error('Upload failed');
-            }
-
-            const data = await response.json();
-            setUploadId(data.upload_id);
+            const response = await uploadAPI.uploadResume(file);
+            setUploadId(response.data.upload_id);
             toast.success('File uploaded successfully');
         } catch (error) {
             toast.error('Upload failed. Please try again.');
@@ -135,28 +116,11 @@ export function TabUpload() {
         }
 
         try {
-            // Get auth token
-            const token = localStorage.getItem('auth_token');
-            const headers: HeadersInit = { 'Content-Type': 'application/json' };
+            const response = await uploadAPI.analyzeJobDescription(jobText);
 
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-            }
-
-            const response = await fetch('/api/uploads/job-description', {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({ text: jobText }),
-            });
-
-            if (!response.ok) {
-                throw new Error('Parsing failed');
-            }
-
-            const data = await response.json();
             toast.success('Job description analyzed!');
             // TODO: Store JD data for ATS optimization
-            console.log('Parsed JD:', data);
+            console.log('Parsed JD:', response.data);
         } catch (error) {
             toast.error('Failed to analyze job description');
         }

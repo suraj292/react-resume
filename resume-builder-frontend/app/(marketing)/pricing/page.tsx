@@ -3,8 +3,8 @@
 import MarketingLayout from '@/components/layout/marketing-layout';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import { ROUTES } from '@/lib/routes';
+import { pricingAPI } from '@/lib/api';
 
 interface PricingFeature {
     text: string;
@@ -16,33 +16,19 @@ interface PricingPlan {
     name: string;
     slug: string;
     description: string;
-    currency: string;
+    pricing: {
+        usd: { monthly: number; yearly: number; formatted_monthly: string; formatted_yearly: string };
+        inr: { monthly: number; yearly: number; formatted_monthly: string; formatted_yearly: string };
+        eur: { monthly: number; yearly: number; formatted_monthly: string; formatted_yearly: string };
+    };
     features: PricingFeature[];
-    is_popular: boolean;
     button_text: string;
     button_link: string;
     badge_text: string | null;
-    theme: string;
-    pricing: {
-        usd: {
-            monthly: number;
-            yearly: number;
-            formatted_monthly: string;
-            formatted_yearly: string;
-        };
-        inr: {
-            monthly: number;
-            yearly: number;
-            formatted_monthly: string;
-            formatted_yearly: string;
-        };
-        eur: {
-            monthly: number;
-            yearly: number;
-            formatted_monthly: string;
-            formatted_yearly: string;
-        };
-    };
+    theme: 'light' | 'dark';
+    is_popular: boolean;
+    is_active: boolean;
+    sort_order: number;
     limits: {
         max_resumes: number | null;
         max_templates: number | null;
@@ -58,28 +44,27 @@ export default function PricingPage() {
     const [activeFaq, setActiveFaq] = useState<number | null>(null);
     const [pricingPlans, setPricingPlans] = useState<PricingPlan[]>([]);
     const [loading, setLoading] = useState(true);
-    const [detectedCurrency, setDetectedCurrency] = useState<'USD' | 'INR' | 'EUR'>('USD');
+    const [detectedCurrency, setDetectedCurrency] = useState<'USD' | 'INR' | 'EUR'>('INR');
+    const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
 
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchPricingData = async () => {
             try {
-                const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
-
                 // Detect currency from IP
-                const currencyResponse = await axios.get(`${API_URL}/detect-currency`);
+                const currencyResponse = await pricingAPI.detectCurrency();
                 setDetectedCurrency(currencyResponse.data.currency);
 
                 // Fetch pricing plans
-                const plansResponse = await axios.get(`${API_URL}/pricing-plans`);
+                const plansResponse = await pricingAPI.getPlans();
                 setPricingPlans(plansResponse.data);
             } catch (error) {
-                console.error('Failed to fetch data:', error);
+                console.error('Failed to fetch pricing data:', error);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchData();
+        fetchPricingData();
     }, []);
 
     const toggleFaq = (index: number) => {

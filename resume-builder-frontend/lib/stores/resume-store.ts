@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
+import { resumeAPI } from '@/lib/api';
 
 export interface PersonalInfo {
     name: string;
@@ -397,9 +398,6 @@ export const useResumeStore = create<ResumeStore>()(
                     set({ isSaving: true, saveError: null });
 
                     try {
-                        // Get auth token
-                        const token = localStorage.getItem('auth_token');
-
                         // Restructure data for backend API
                         // Backend expects: { id, title, data: { personal, summary, ... }, template_id, color_id }
                         const payload = {
@@ -416,30 +414,14 @@ export const useResumeStore = create<ResumeStore>()(
                             color_id: currentResume.colorId,
                         };
 
-                        const headers: HeadersInit = {
-                            'Content-Type': 'application/json',
-                            'If-Match': etag || '',
-                        };
-
-                        if (token) {
-                            headers['Authorization'] = `Bearer ${token}`;
-                        }
-
-                        const response = await fetch(`/api/resumes/${currentResume.id}`, {
-                            method: 'PUT',
-                            headers,
-                            body: JSON.stringify(payload),
+                        const response = await resumeAPI.update(currentResume.id, payload, {
+                            headers: {
+                                'If-Match': etag || '',
+                            }
                         });
 
-                        if (!response.ok) {
-                            if (response.status === 412) {
-                                throw new Error('Conflict: Resume was modified by another session');
-                            }
-                            throw new Error('Failed to save resume');
-                        }
-
-                        const newEtag = response.headers.get('ETag');
-                        const savedResume = await response.json();
+                        const newEtag = response.headers['etag'];
+                        const savedResume = response.data;
 
                         // Use setResume to ensure proper data mapping
                         const resumeWithEtag = {
@@ -454,10 +436,21 @@ export const useResumeStore = create<ResumeStore>()(
                             isDirty: false,
                             isSaving: false,
                         });
-                    } catch (error) {
+                    } catch (error: any) {
+                        let errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+                        // Handle Axios errors
+                        if (error.response) {
+                            if (error.response.status === 412) {
+                                errorMessage = 'Conflict: Resume was modified by another session';
+                            } else {
+                                errorMessage = error.response.data?.message || errorMessage;
+                            }
+                        }
+
                         set({
                             isSaving: false,
-                            saveError: error instanceof Error ? error.message : 'Unknown error',
+                            saveError: errorMessage,
                         });
                         throw error;
                     }
@@ -466,27 +459,13 @@ export const useResumeStore = create<ResumeStore>()(
                 loadResume: async (id: string) => {
                     try {
                         set({ isSaving: true });
+                        const response = await resumeAPI.getOne(id);
 
-                        // Get auth token
-                        const token = localStorage.getItem('auth_token');
-                        const headers: HeadersInit = {};
-
-                        if (token) {
-                            headers['Authorization'] = `Bearer ${token}`;
-                        }
-
-                        const response = await fetch(`/api/resumes/${id}`, { headers });
-
-                        if (!response.ok) {
-                            throw new Error('Failed to load resume');
-                        }
-
-                        const resume = await response.json();
+                        const resume = response.data;
                         console.log('API Response:', resume);
                         console.log('Resume data:', resume.data);
-                        console.log('Personal info:', resume.data?.personal);
 
-                        const etag = response.headers.get('ETag');
+                        const etag = response.headers['etag'];
 
                         // Use setResume to ensure proper data mapping
                         const resumeWithEtag = {

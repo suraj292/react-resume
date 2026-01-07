@@ -7,6 +7,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { useResumeStore } from '@/lib/stores/resume-store';
 import { useUIStore } from '@/lib/stores/ui-store';
 import { useAuth } from '@/contexts/AuthContext';
+import { pdfAPI } from '@/lib/api';
 
 interface NavbarProps {
     isSaving: boolean;
@@ -129,32 +130,15 @@ export function Navbar({ isSaving, isDirty }: NavbarProps) {
                 ? `${currentResume.personal.name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}_${new Date().toISOString().split('T')[0]}.pdf`
                 : `resume_${new Date().toISOString().split('T')[0]}.pdf`;
 
-            // Get auth token
-            const token = localStorage.getItem('auth_token');
-            const headers: HeadersInit = {
-                'Content-Type': 'application/json',
-            };
-
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-            }
-
             // Call backend API
-            const response = await fetch('http://localhost:8000/api/export/pdf', {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({
-                    html: completeHtml,
-                    filename: filename,
-                }),
+            const response = await pdfAPI.export({
+                html: completeHtml,
+                filename: filename,
             });
 
-            if (!response.ok) {
-                throw new Error('Failed to generate PDF');
-            }
-
             // Download the PDF
-            const blob = await response.blob();
+            // response.data is the blob because of responseType: 'blob' in api client
+            const blob = response.data;
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;

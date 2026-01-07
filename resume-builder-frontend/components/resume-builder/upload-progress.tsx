@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { uploadAPI } from '@/lib/api';
 
 interface UploadStatus {
     id: number;
@@ -23,17 +24,8 @@ export function UploadProgress({ uploadId, onComplete, onError }: UploadProgress
     const { data: status, isLoading } = useQuery<UploadStatus>({
         queryKey: ['upload-status', uploadId],
         queryFn: async () => {
-            // Get auth token
-            const token = localStorage.getItem('auth_token');
-            const headers: HeadersInit = {};
-
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-            }
-
-            const response = await fetch(`/api/uploads/${uploadId}/status`, { headers });
-            if (!response.ok) throw new Error('Failed to fetch status');
-            return response.json();
+            const response = await uploadAPI.getUploadStatus(uploadId.toString());
+            return response.data;
         },
         refetchInterval: (query) => {
             // Stop polling if completed or failed
