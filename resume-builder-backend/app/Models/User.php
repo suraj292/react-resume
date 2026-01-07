@@ -71,4 +71,68 @@ class User extends Authenticatable implements MustVerifyEmail
             })
             ->latest();
     }
+
+    /**
+     * Get the user's resumes.
+     */
+    public function resumes()
+    {
+        return $this->hasMany(Resume::class);
+    }
+
+    /**
+     * Get the user's downloads.
+     */
+    public function downloads()
+    {
+        return $this->hasMany(Download::class);
+    }
+
+    /**
+     * Get the user's AI requests.
+     */
+    public function aiRequests()
+    {
+        return $this->hasMany(AiRequest::class);
+    }
+
+    /**
+     * Get the user's current plan.
+     */
+    public function getCurrentPlan()
+    {
+        return app(\App\Services\PlanAccessService::class)->getUserPlan($this);
+    }
+
+    /**
+     * Check if user can create more resumes.
+     */
+    public function canCreateResume(): bool
+    {
+        return app(\App\Services\PlanAccessService::class)->canCreateResume($this);
+    }
+
+    /**
+     * Check if user can download in a specific format.
+     */
+    public function canDownload(string $format = 'pdf'): bool
+    {
+        return app(\App\Services\PlanAccessService::class)->canDownload($this, $format);
+    }
+
+    /**
+     * Check if user can use AI features.
+     */
+    public function canUseAI(): bool
+    {
+        return app(\App\Services\PlanAccessService::class)->canUseAI($this);
+    }
+
+    /**
+     * Get user's plan limits.
+     */
+    public function getPlanLimits(): array
+    {
+        return app(\App\Services\PlanAccessService::class)->getPlanLimits($this);
+    }
 }

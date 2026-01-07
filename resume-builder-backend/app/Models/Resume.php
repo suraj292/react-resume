@@ -32,4 +32,20 @@ class Resume extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    /**
+     * Get the downloads for this resume.
+     */
+    public function downloads()
+    {
+        return $this->hasMany(Download::class);
+    }
+
+    /**
+     * Get the AI requests for this resume.
+     */
+    public function aiRequests()
+    {
+        return $this->hasMany(AiRequest::class);
+    }
 }

@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\PricingPlanController;
 use App\Http\Controllers\Api\GeolocationController;
 use App\Http\Controllers\Api\UserStatsController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\PlanController;
 
 /*
 |--------------------------------------------------------------------------
@@ -42,16 +43,26 @@ Route::prefix('auth')->group(function () {
 Route::get('email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
     ->name('verification.verify');
 
-// Resume CRUD (temporarily without auth for testing)
-Route::apiResource('resumes', ResumeController::class);
+// Resume CRUD (with plan limits)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('resumes', [ResumeController::class, 'index']);
+    Route::get('resumes/{resume}', [ResumeController::class, 'show']);
+    Route::post('resumes', [ResumeController::class, 'store'])->middleware('plan.limit:resume');
+    Route::put('resumes/{resume}', [ResumeController::class, 'update']);
+    Route::delete('resumes/{resume}', [ResumeController::class, 'destroy']);
+});
 
-// File Upload
-Route::post('uploads/resume', [UploadController::class, 'uploadResume']);
-Route::get('uploads/{id}/status', [UploadController::class, 'getStatus']);
-Route::post('uploads/job-description', [UploadController::class, 'parseJobDescription']);
+// File Upload (with AI limits)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('uploads/resume', [UploadController::class, 'uploadResume'])->middleware('plan.limit:ai');
+    Route::get('uploads/{id}/status', [UploadController::class, 'getStatus']);
+    Route::post('uploads/job-description', [UploadController::class, 'parseJobDescription'])->middleware('plan.limit:ai');
+});
 
-// PDF Export
-Route::post('export/pdf', [PdfExportController::class, 'export']);
+// PDF Export (with download limits)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('export/pdf', [PdfExportController::class, 'export'])->middleware('plan.limit:download_pdf');
+});
 
 // Pricing Plans
 Route::get('/pricing-plans', [PricingPlanController::class, 'index']);
@@ -71,12 +82,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/payments/verify', [PaymentController::class, 'verifyPayment']);
 });
 
+// Plan Management
+Route::middleware('auth:sanctum')->prefix('plan')->group(function () {
+    Route::get('/current', [PlanController::class, 'getCurrentPlan']);
+    Route::get('/check/{feature}', [PlanController::class, 'checkFeatureAccess']);
+    Route::get('/usage', [PlanController::class, 'getUsageStats']);
+});
+
 // User Stats (Protected)
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user/stats', [UserStatsController::class, 'index']);
 });
 
-// ATS Analysis
-Route::prefix('ats')->group(function () {
-    Route::post('analyze', [ATSController::class, 'analyze']);
+// ATS Analysis (with AI limits)
+Route::middleware('auth:sanctum')->prefix('ats')->group(function () {
+    Route::post('analyze', [ATSController::class, 'analyze'])->middleware('plan.limit:ai');
 });

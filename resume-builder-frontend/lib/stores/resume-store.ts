@@ -397,6 +397,9 @@ export const useResumeStore = create<ResumeStore>()(
                     set({ isSaving: true, saveError: null });
 
                     try {
+                        // Get auth token
+                        const token = localStorage.getItem('auth_token');
+
                         // Restructure data for backend API
                         // Backend expects: { id, title, data: { personal, summary, ... }, template_id, color_id }
                         const payload = {
@@ -413,12 +416,18 @@ export const useResumeStore = create<ResumeStore>()(
                             color_id: currentResume.colorId,
                         };
 
+                        const headers: HeadersInit = {
+                            'Content-Type': 'application/json',
+                            'If-Match': etag || '',
+                        };
+
+                        if (token) {
+                            headers['Authorization'] = `Bearer ${token}`;
+                        }
+
                         const response = await fetch(`/api/resumes/${currentResume.id}`, {
                             method: 'PATCH',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'If-Match': etag || '',
-                            },
+                            headers,
                             body: JSON.stringify(payload),
                         });
 
@@ -457,7 +466,16 @@ export const useResumeStore = create<ResumeStore>()(
                 loadResume: async (id: string) => {
                     try {
                         set({ isSaving: true });
-                        const response = await fetch(`/api/resumes/${id}`);
+
+                        // Get auth token
+                        const token = localStorage.getItem('auth_token');
+                        const headers: HeadersInit = {};
+
+                        if (token) {
+                            headers['Authorization'] = `Bearer ${token}`;
+                        }
+
+                        const response = await fetch(`/api/resumes/${id}`, { headers });
 
                         if (!response.ok) {
                             throw new Error('Failed to load resume');
