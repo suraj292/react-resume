@@ -4,6 +4,7 @@ import MarketingLayout from '@/components/layout/marketing-layout';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { ROUTES } from '@/lib/routes';
 
 interface PricingFeature {
     text: string;
@@ -425,13 +426,13 @@ export default function PricingPage() {
                 </p>
                 <div className="flex flex-col sm:flex-row justify-center gap-4 animate-[fadeUp_0.8s_ease-out_forwards] [animation-delay:0.2s]">
                     <Link
-                        href="/builder"
+                        href={ROUTES.BUILDER}
                         className="px-8 py-4 bg-white text-indigo-900 font-bold rounded-xl shadow-lg hover:bg-indigo-50 transition-colors transform hover:-translate-y-1"
                     >
                         Build Resume Free
                     </Link>
                     <Link
-                        href="/ats-checker"
+                        href={ROUTES.ATS_CHECKER}
                         className="px-8 py-4 bg-transparent border border-indigo-400 text-white font-bold rounded-xl hover:bg-indigo-800 transition-colors transform hover:-translate-y-1"
                     >
                         Check ATS Score

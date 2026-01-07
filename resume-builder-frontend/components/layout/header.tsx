@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { ROUTES } from '@/lib/routes';
 
 export default function Header() {
     const router = useRouter();
@@ -26,7 +27,7 @@ export default function Header() {
 
     const handleLogout = async () => {
         await logout();
-        router.push('/login');
+        router.push(ROUTES.LOGIN);
     };
 
     const getUserInitials = () => {
@@ -43,7 +44,7 @@ export default function Header() {
         <nav className="glass-header fixed w-full z-50 top-0 bg-white/85 backdrop-blur-md border-b border-slate-200/60">
             <div className="container mx-auto px-6 h-20 flex items-center justify-between">
                 {/* Logo */}
-                <Link href="/" className="flex items-center gap-2.5 group">
+                <Link href={ROUTES.HOME} className="flex items-center gap-2.5 group">
                     <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white text-lg shadow-lg group-hover:scale-105 transition-transform duration-300">
                         <i className="fa-solid fa-layer-group"></i>
                     </div>
@@ -54,19 +55,19 @@ export default function Header() {
 
                 {/* Desktop Links */}
                 <div className="hidden md:flex items-center gap-8">
-                    <Link href="/" className="text-sm font-medium text-indigo-600">
+                    <Link href={ROUTES.HOME} className="text-sm font-medium text-indigo-600">
                         Home
                     </Link>
-                    <Link href="/builder" className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">
+                    <Link href={ROUTES.BUILDER} className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">
                         Resume Builder
                     </Link>
-                    <Link href="/ats-checker" className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">
+                    <Link href={ROUTES.ATS_CHECKER} className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">
                         ATS Checker
                     </Link>
-                    <Link href="/pricing" className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">
+                    <Link href={ROUTES.PRICING} className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">
                         Pricing
                     </Link>
-                    <Link href="/contact" className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">
+                    <Link href={ROUTES.CONTACT} className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">
                         Contact
                     </Link>
                 </div>
@@ -107,7 +108,7 @@ export default function Header() {
 
                                     {/* Menu Items */}
                                     <Link
-                                        href="/profile"
+                                        href={ROUTES.PROFILE}
                                         className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors text-sm text-slate-700"
                                         onClick={() => setShowUserMenu(false)}
                                     >
@@ -115,7 +116,7 @@ export default function Header() {
                                         Profile
                                     </Link>
                                     <Link
-                                        href="/my-resumes"
+                                        href={ROUTES.MY_RESUMES}
                                         className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors text-sm text-slate-700"
                                         onClick={() => setShowUserMenu(false)}
                                     >
@@ -135,11 +136,11 @@ export default function Header() {
                         </div>
                     ) : (
                         <>
-                            <Link href="/login" className="text-sm font-medium text-slate-600 hover:text-slate-900">
+                            <Link href={ROUTES.LOGIN} className="text-sm font-medium text-slate-600 hover:text-slate-900">
                                 Log In
                             </Link>
                             <Link
-                                href="/builder"
+                                href={ROUTES.BUILDER}
                                 className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold shadow-lg hover:bg-slate-800 hover:shadow-xl transition-all transform hover:-translate-y-0.5"
                             >
                                 Build Resume Free
@@ -161,19 +162,19 @@ export default function Header() {
             {mobileMenuOpen && (
                 <div className="md:hidden bg-white border-t border-slate-200 shadow-lg">
                     <div className="container mx-auto px-6 py-4 flex flex-col gap-4">
-                        <Link href="/" className="text-sm font-medium text-indigo-600" onClick={() => setMobileMenuOpen(false)}>
+                        <Link href={ROUTES.HOME} className="text-sm font-medium text-indigo-600" onClick={() => setMobileMenuOpen(false)}>
                             Home
                         </Link>
-                        <Link href="/builder" className="text-sm font-medium text-slate-600" onClick={() => setMobileMenuOpen(false)}>
+                        <Link href={ROUTES.BUILDER} className="text-sm font-medium text-slate-600" onClick={() => setMobileMenuOpen(false)}>
                             Resume Builder
                         </Link>
-                        <Link href="/ats-checker" className="text-sm font-medium text-slate-600" onClick={() => setMobileMenuOpen(false)}>
+                        <Link href={ROUTES.ATS_CHECKER} className="text-sm font-medium text-slate-600" onClick={() => setMobileMenuOpen(false)}>
                             ATS Checker
                         </Link>
-                        <Link href="/pricing" className="text-sm font-medium text-slate-600" onClick={() => setMobileMenuOpen(false)}>
+                        <Link href={ROUTES.PRICING} className="text-sm font-medium text-slate-600" onClick={() => setMobileMenuOpen(false)}>
                             Pricing
                         </Link>
-                        <Link href="/contact" className="text-sm font-medium text-slate-600" onClick={() => setMobileMenuOpen(false)}>
+                        <Link href={ROUTES.CONTACT} className="text-sm font-medium text-slate-600" onClick={() => setMobileMenuOpen(false)}>
                             Contact
                         </Link>
                         <div className="pt-4 border-t border-slate-200 flex flex-col gap-3">
@@ -192,10 +193,10 @@ export default function Header() {
                                             <p className="text-xs text-slate-500">{user.email}</p>
                                         </div>
                                     </div>
-                                    <Link href="/profile" className="text-sm font-medium text-slate-600" onClick={() => setMobileMenuOpen(false)}>
+                                    <Link href={ROUTES.PROFILE} className="text-sm font-medium text-slate-600" onClick={() => setMobileMenuOpen(false)}>
                                         Profile
                                     </Link>
-                                    <Link href="/my-resumes" className="text-sm font-medium text-slate-600" onClick={() => setMobileMenuOpen(false)}>
+                                    <Link href={ROUTES.MY_RESUMES} className="text-sm font-medium text-slate-600" onClick={() => setMobileMenuOpen(false)}>
                                         My Resumes
                                     </Link>
                                     <button
@@ -210,11 +211,11 @@ export default function Header() {
                                 </>
                             ) : (
                                 <>
-                                    <Link href="/login" className="text-sm font-medium text-slate-600" onClick={() => setMobileMenuOpen(false)}>
+                                    <Link href={ROUTES.LOGIN} className="text-sm font-medium text-slate-600" onClick={() => setMobileMenuOpen(false)}>
                                         Log In
                                     </Link>
                                     <Link
-                                        href="/builder"
+                                        href={ROUTES.BUILDER}
                                         className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold text-center shadow-lg"
                                         onClick={() => setMobileMenuOpen(false)}
                                     >

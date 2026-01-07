@@ -5,6 +5,7 @@ import MarketingLayout from '@/components/layout/marketing-layout';
 import { useAuth } from '@/contexts/AuthContext';
 import AuthRequiredModal from '@/components/auth-required-modal';
 import { analyzeResume } from '@/lib/ats-api';
+import { ROUTES } from '@/lib/routes';
 
 export default function ATSCheckerPage() {
     const [activeTab, setActiveTab] = useState('upload');
@@ -583,7 +584,7 @@ export default function ATSCheckerPage() {
                     {/* Fix Actions */}
                     <div className="mt-8 flex justify-center animate-[slideUp_0.6s_ease-out_forwards] [animation-delay:0.9s]">
                         <a
-                            href="/builder"
+                            href={ROUTES.BUILDER}
                             className="inline-flex items-center justify-center px-8 py-4 text-base font-bold text-white transition-all duration-200 bg-indigo-600 border border-transparent rounded-full shadow-lg hover:bg-indigo-700 hover:shadow-indigo-500/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-600 transform hover:-translate-y-1"
                         >
                             <i className="fa-solid fa-wrench mr-2"></i> Fix These Issues in Resume Builder

@@ -3,6 +3,7 @@
 import MarketingLayout from '@/components/layout/marketing-layout';
 import Link from 'next/link';
 import { useState, FormEvent } from 'react';
+import { ROUTES } from '@/lib/routes';
 
 export default function ContactPage() {
     const [showSuccess, setShowSuccess] = useState(false);
@@ -262,13 +263,13 @@ export default function ContactPage() {
                     <h2 className="text-3xl md:text-5xl font-display font-bold mb-6">Ready to Build Your Resume with AI?</h2>
                     <div className="flex flex-col sm:flex-row justify-center gap-4">
                         <Link
-                            href="/builder"
+                            href={ROUTES.BUILDER}
                             className="px-8 py-4 bg-white text-indigo-900 font-bold rounded-xl shadow-lg hover:bg-indigo-50 transition-colors"
                         >
                             Build Resume Free
                         </Link>
                         <Link
-                            href="/ats-checker"
+                            href={ROUTES.ATS_CHECKER}
                             className="px-8 py-4 bg-transparent border border-indigo-400 text-white font-bold rounded-xl hover:bg-indigo-800 transition-colors"
                         >
                             Check ATS Score

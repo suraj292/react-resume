@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { RevealOnScroll } from '@/components/reveal-on-scroll';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { ROUTES, isAuthenticated } from '@/lib/routes';
+import { useRouter } from 'next/navigation';
 
 interface PricingFeature {
     text: string;
@@ -57,6 +59,7 @@ export default function HomePage() {
     const [pricingPlans, setPricingPlans] = useState<PricingPlan[]>([]);
     const [loading, setLoading] = useState(true);
     const [detectedCurrency, setDetectedCurrency] = useState<'USD' | 'INR' | 'EUR'>('INR');
+    const router = useRouter();
 
     useEffect(() => {
         const fetchPricingData = async () => {
@@ -112,10 +115,10 @@ export default function HomePage() {
                         </p>
 
                         <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 animate-[fadeInUp_0.8s_ease-out_forwards] [animation-delay:0.3s]">
-                            <Link href="/builder" className="w-full sm:w-auto px-8 py-4 rounded-xl bg-indigo-600 text-white font-bold shadow-lg hover:bg-indigo-500 hover:shadow-indigo-500/30 transition-all transform hover:-translate-y-1 flex items-center justify-center gap-2">
+                            <Link href={ROUTES.BUILDER} className="w-full sm:w-auto px-8 py-4 rounded-xl bg-indigo-600 text-white font-bold shadow-lg hover:bg-indigo-500 hover:shadow-indigo-500/30 transition-all transform hover:-translate-y-1 flex items-center justify-center gap-2">
                                 <i className="fa-solid fa-wand-magic-sparkles"></i> Build Resume
                             </Link>
-                            <Link href="/ats-checker" className="w-full sm:w-auto px-8 py-4 rounded-xl bg-white text-slate-700 border border-slate-200 font-bold hover:bg-slate-50 transition-all flex items-center justify-center gap-2 hover:border-indigo-300">
+                            <Link href={ROUTES.ATS_CHECKER} className="w-full sm:w-auto px-8 py-4 rounded-xl bg-white text-slate-700 border border-slate-200 font-bold hover:bg-slate-50 transition-all flex items-center justify-center gap-2 hover:border-indigo-300">
                                 <i className="fa-solid fa-shield-halved"></i> Check ATS Score
                             </Link>
                         </div>
@@ -276,7 +279,7 @@ export default function HomePage() {
                                 </li>
                             </ul>
 
-                            <Link href="/ats-checker" className="group text-indigo-600 font-bold hover:text-indigo-700 border-b-2 border-indigo-200 hover:border-indigo-600 transition-all inline-flex items-center gap-2">
+                            <Link href={ROUTES.ATS_CHECKER} className="group text-indigo-600 font-bold hover:text-indigo-700 border-b-2 border-indigo-200 hover:border-indigo-600 transition-all inline-flex items-center gap-2">
                                 Check your resume score now <i className="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
                             </Link>
                         </div>
@@ -342,7 +345,7 @@ export default function HomePage() {
                                     </div>
 
                                     <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
-                                        <Link href="/builder" className="px-6 py-3 bg-white text-slate-900 rounded-lg font-bold transform translate-y-4 group-hover:translate-y-0 transition-transform">
+                                        <Link href={ROUTES.BUILDER} className="px-6 py-3 bg-white text-slate-900 rounded-lg font-bold transform translate-y-4 group-hover:translate-y-0 transition-transform">
                                             Use Template
                                         </Link>
                                     </div>
@@ -463,15 +466,13 @@ export default function HomePage() {
                                 const isDark = plan.theme === 'dark';
 
                                 const handlePlanClick = () => {
-                                    // Check if user is authenticated
-                                    const token = localStorage.getItem('auth_token');
+                                    const checkoutUrl = ROUTES.checkoutWithPlan(plan.slug, 'monthly');
 
-                                    if (!token) {
-                                        // Redirect to login with return URL
-                                        window.location.href = `/login?redirect=/checkout?plan=${plan.slug}&period=monthly`;
+                                    // Check authentication and navigate
+                                    if (isAuthenticated()) {
+                                        router.push(checkoutUrl);
                                     } else {
-                                        // Redirect to checkout
-                                        window.location.href = `/checkout?plan=${plan.slug}&period=monthly`;
+                                        router.push(ROUTES.loginWithRedirect(checkoutUrl));
                                     }
                                 };
 
@@ -480,8 +481,8 @@ export default function HomePage() {
                                         key={plan.id}
                                         onClick={handlePlanClick}
                                         className={`p-6 rounded-xl transition-all opacity-100 cursor-pointer ${isDark
-                                                ? 'bg-slate-900 text-white shadow-xl transform scale-105 relative hover:scale-110 duration-300'
-                                                : 'border border-slate-200 text-slate-500 hover:border-indigo-200 hover:shadow-md'
+                                            ? 'bg-slate-900 text-white shadow-xl transform scale-105 relative hover:scale-110 duration-300'
+                                            : 'border border-slate-200 text-slate-500 hover:border-indigo-200 hover:shadow-md'
                                             }`}
                                     >
                                         {plan.badge_text && (
@@ -529,10 +530,10 @@ export default function HomePage() {
                     <h2 className="text-3xl md:text-5xl font-display font-bold mb-6">Land your dream job today</h2>
                     <p className="text-indigo-200 text-lg mb-10 max-w-2xl mx-auto">Join thousands of professionals using AI to advance their careers.</p>
                     <div className="flex flex-col sm:flex-row justify-center gap-4">
-                        <Link href="/builder" className="px-8 py-4 bg-white text-indigo-900 font-bold rounded-xl shadow-lg hover:bg-indigo-50 transition-colors transform hover:-translate-y-1">
+                        <Link href={ROUTES.BUILDER} className="px-8 py-4 bg-white text-indigo-900 font-bold rounded-xl shadow-lg hover:bg-indigo-50 transition-colors transform hover:-translate-y-1">
                             Build Resume Free
                         </Link>
-                        <Link href="/ats-checker" className="px-8 py-4 bg-transparent border border-indigo-400 text-white font-bold rounded-xl hover:bg-indigo-900/50 transition-colors transform hover:-translate-y-1">
+                        <Link href={ROUTES.ATS_CHECKER} className="px-8 py-4 bg-transparent border border-indigo-400 text-white font-bold rounded-xl hover:bg-indigo-900/50 transition-colors transform hover:-translate-y-1">
                             Check ATS Score
                         </Link>
                     </div>
