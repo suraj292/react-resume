@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\GeolocationController;
 use App\Http\Controllers\Api\UserStatsController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PlanController;
+use App\Http\Controllers\Api\ContactController;
 
 /*
 |--------------------------------------------------------------------------
@@ -69,6 +70,10 @@ Route::get('/pricing-plans', [PricingPlanController::class, 'index']);
 
 // Geolocation - Detect currency from IP
 Route::get('/detect-currency', [GeolocationController::class, 'detectCurrency']);
+
+// Contact
+Route::get('/contact/settings', [ContactController::class, 'getSettings']);
+Route::post('/contact/enquiry', [ContactController::class, 'submitEnquiry']);
 
 // Coupons
 Route::middleware('auth:sanctum')->group(function () {
