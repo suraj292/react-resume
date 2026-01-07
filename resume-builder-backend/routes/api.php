@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\UserStatsController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PlanController;
 use App\Http\Controllers\Api\ContactController;
+use App\Http\Controllers\Api\BlogController;
 
 /*
 |--------------------------------------------------------------------------
@@ -102,4 +103,11 @@ Route::middleware('auth:sanctum')->group(function () {
 // ATS Analysis (with AI limits)
 Route::middleware('auth:sanctum')->prefix('ats')->group(function () {
     Route::post('analyze', [ATSController::class, 'analyze'])->middleware('plan.limit:ai');
+});
+
+// Blog Routes
+Route::prefix('blog')->group(function () {
+    Route::get('posts', [BlogController::class, 'index']);
+    Route::get('posts/{slug}', [BlogController::class, 'show']);
+    Route::get('categories', [BlogController::class, 'categories']);
 });

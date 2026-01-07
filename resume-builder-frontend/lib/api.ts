@@ -186,6 +186,12 @@ export const paymentAPI = {
         api.post('/payments/verify', data),
 };
 
+export const blogAPI = {
+    getAll: (params?: any) => api.get('/blog/posts', { params }),
+    getBySlug: (slug: string) => api.get(`/blog/posts/${slug}`),
+    getCategories: () => api.get('/blog/categories'),
+};
+
 // ============================================================================
 // Social Auth URLs
 // ============================================================================
