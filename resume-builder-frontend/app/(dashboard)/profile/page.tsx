@@ -164,11 +164,9 @@ export default function ProfilePage() {
                             <h2 className="text-lg font-bold text-slate-900">{user.name}</h2>
                             <p className="text-xs text-slate-500 mb-4">{user.email}</p>
 
-                            {user.provider && (
-                                <div className="inline-block px-3 py-1 bg-indigo-100 text-indigo-700 text-xs font-bold rounded-full mb-4 capitalize">
-                                    {user.provider} Account
-                                </div>
-                            )}
+                            <div className="inline-block px-3 py-1 bg-indigo-100 text-indigo-700 text-xs font-bold rounded-full mb-4">
+                                Pro Plan
+                            </div>
 
                             <button
                                 onClick={handleLogout}

@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Razorpay\Api\Api;
 use App\Models\Coupon;
 use App\Models\CouponUsage;
+use App\Models\Order;
 use Carbon\Carbon;
 
 class PaymentController extends Controller
@@ -20,8 +21,13 @@ class PaymentController extends Controller
         $request->validate([
             'amount' => 'required|numeric|min:1',
             'plan_slug' => 'required|string',
+            'plan_name' => 'required|string',
             'period' => 'required|in:monthly,yearly',
+            'base_price' => 'required|numeric',
+            'gst_amount' => 'required|numeric',
+            'discount_amount' => 'nullable|numeric',
             'coupon_code' => 'nullable|string',
+            'phone_number' => 'nullable|string',
         ]);
 
         $user = Auth::user();
@@ -53,6 +59,29 @@ class PaymentController extends Controller
             ];
             
             $razorpayOrder = $api->order->create($orderData);
+            
+            // Create order record in database
+            $coupon = null;
+            if ($request->coupon_code) {
+                $coupon = Coupon::where('code', strtoupper($request->coupon_code))->first();
+            }
+            
+            Order::create([
+                'order_id' => $razorpayOrder['id'],
+                'user_id' => $user->id,
+                'plan_slug' => $request->plan_slug,
+                'plan_name' => $request->plan_name,
+                'period' => $request->period,
+                'base_price' => $request->base_price,
+                'gst_amount' => $request->gst_amount,
+                'discount_amount' => $request->discount_amount ?? 0,
+                'total_amount' => $request->amount,
+                'currency' => 'INR',
+                'coupon_id' => $coupon?->id,
+                'coupon_code' => $request->coupon_code,
+                'payment_status' => 'pending',
+                'phone_number' => $request->phone_number,
+            ]);
             
             return response()->json([
                 'success' => true,
@@ -122,11 +151,27 @@ class PaymentController extends Controller
                 }
             }
             
+            // Update order record
+            $order = Order::where('order_id', $request->razorpay_order_id)->first();
+            
+            if ($order) {
+                $validFrom = Carbon::now();
+                $validUntil = $order->period === 'monthly' 
+                    ? $validFrom->copy()->addMonth()
+                    : $validFrom->copy()->addYear();
+                
+                $order->update([
+                    'payment_id' => $request->razorpay_payment_id,
+                    'payment_signature' => $request->razorpay_signature,
+                    'payment_status' => 'completed',
+                    'valid_from' => $validFrom,
+                    'valid_until' => $validUntil,
+                ]);
+            }
+            
             // Here you would typically:
             // 1. Update user subscription status
             // 2. Send confirmation email
-            // 3. Create invoice record
-            // 4. Update user's plan in database
             
             return response()->json([
                 'success' => true,

@@ -165,10 +165,15 @@ export default function CheckoutPage() {
                     'Accept': 'application/json',
                 },
                 body: JSON.stringify({
-                    amount: Math.round(totalPrice * 100) / 100, // Round to 2 decimal places
+                    amount: Math.round(totalPrice * 100) / 100,
                     plan_slug: planSlug,
+                    plan_name: planName,
                     period: period,
+                    base_price: basePrice,
+                    gst_amount: gstAmount,
+                    discount_amount: couponApplied ? discountAmount : 0,
                     coupon_code: couponApplied ? couponCode : null,
+                    phone_number: phoneNumber,
                 }),
             });
 
