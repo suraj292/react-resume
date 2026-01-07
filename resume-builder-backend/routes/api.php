@@ -48,6 +48,12 @@ Route::post('uploads/job-description', [UploadController::class, 'parseJobDescri
 // PDF Export
 Route::post('export/pdf', [PdfExportController::class, 'export']);
 
+// Pricing Plans
+Route::get('pricing-plans', [App\Http\Controllers\Api\PricingPlanController::class, 'index']);
+
+// Geolocation - Detect currency from IP
+Route::get('detect-currency', [App\Http\Controllers\Api\GeolocationController::class, 'detectCurrency']);
+
 // ATS Analysis
 Route::prefix('ats')->group(function () {
     Route::post('analyze', [ATSController::class, 'analyze']);

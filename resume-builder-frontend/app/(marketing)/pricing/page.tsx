@@ -2,11 +2,84 @@
 
 import MarketingLayout from '@/components/layout/marketing-layout';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+
+interface PricingFeature {
+    text: string;
+    included: boolean;
+}
+
+interface PricingPlan {
+    id: number;
+    name: string;
+    slug: string;
+    description: string;
+    currency: string;
+    features: PricingFeature[];
+    is_popular: boolean;
+    button_text: string;
+    button_link: string;
+    badge_text: string | null;
+    theme: string;
+    pricing: {
+        usd: {
+            monthly: number;
+            yearly: number;
+            formatted_monthly: string;
+            formatted_yearly: string;
+        };
+        inr: {
+            monthly: number;
+            yearly: number;
+            formatted_monthly: string;
+            formatted_yearly: string;
+        };
+        eur: {
+            monthly: number;
+            yearly: number;
+            formatted_monthly: string;
+            formatted_yearly: string;
+        };
+    };
+    limits: {
+        max_resumes: number | null;
+        max_templates: number | null;
+        max_downloads_per_month: number | null;
+        max_ai_requests_per_month: number | null;
+        can_export_pdf: boolean;
+        can_export_docx: boolean;
+    };
+}
 
 export default function PricingPage() {
     const [isYearly, setIsYearly] = useState(false);
     const [activeFaq, setActiveFaq] = useState<number | null>(null);
+    const [pricingPlans, setPricingPlans] = useState<PricingPlan[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [detectedCurrency, setDetectedCurrency] = useState<'USD' | 'INR' | 'EUR'>('USD');
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+
+                // Detect currency from IP
+                const currencyResponse = await axios.get(`${API_URL}/detect-currency`);
+                setDetectedCurrency(currencyResponse.data.currency);
+
+                // Fetch pricing plans
+                const plansResponse = await axios.get(`${API_URL}/pricing-plans`);
+                setPricingPlans(plansResponse.data);
+            } catch (error) {
+                console.error('Failed to fetch data:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, []);
 
     const toggleFaq = (index: number) => {
         setActiveFaq(activeFaq === index ? null : index);
@@ -46,13 +119,16 @@ export default function PricingPage() {
 
                     <button
                         onClick={() => setIsYearly(!isYearly)}
-                        className="relative inline-block w-14 h-6 align-middle select-none transition duration-200 ease-in"
+                        className="relative inline-flex items-center w-14 h-7 rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                        style={{ backgroundColor: isYearly ? '#4F46E5' : '#E2E8F0' }}
                     >
-                        <div className={`block overflow-hidden h-6 rounded-full ${isYearly ? 'bg-indigo-600' : 'bg-slate-200'} cursor-pointer transition-colors duration-300`}></div>
-                        <div className={`absolute block w-6 h-6 rounded-full bg-white border-4 ${isYearly ? 'border-indigo-600 right-0' : 'border-slate-200 left-0'} appearance-none cursor-pointer transition-all duration-300 shadow`}></div>
+                        <span
+                            className={`inline-block w-5 h-5 transform rounded-full bg-white shadow-lg transition-transform duration-300 ease-in-out ${isYearly ? 'translate-x-8' : 'translate-x-1'
+                                }`}
+                        />
                     </button>
 
-                    <span className="text-sm font-medium text-slate-900">Yearly</span>
+                    <span className={`text-sm font-medium ${isYearly ? 'text-slate-900' : 'text-slate-600'}`}>Yearly</span>
                     <span className="bg-green-100 text-green-700 text-xs font-bold px-2.5 py-1 rounded-full border border-green-200 -ml-2 animate-[bounceSlight_2s_infinite]">
                         Save 20%
                     </span>
@@ -60,130 +136,94 @@ export default function PricingPage() {
 
                 {/* Pricing Cards */}
                 <div className="container mx-auto max-w-6xl px-4">
-                    <div className="grid md:grid-cols-3 gap-8">
-
-                        {/* Free Plan */}
-                        <div className="bg-white rounded-2xl p-8 border border-slate-200 pricing-card flex flex-col animate-[fadeUp_0.8s_ease-out_forwards] [animation-delay:0.3s]">
-                            <div className="mb-4">
-                                <h3 className="text-xl font-bold text-slate-900">Free</h3>
-                                <p className="text-sm text-slate-500 mt-1">For getting started</p>
-                            </div>
-                            <div className="mb-6">
-                                <span className="text-4xl font-bold text-slate-900">₹0</span>
-                                <span className="text-slate-400">/forever</span>
-                            </div>
-                            <Link
-                                href="#"
-                                className="block w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-center rounded-xl transition-colors mb-8 transform hover:scale-105 active:scale-95"
-                            >
-                                Start Free
-                            </Link>
-                            <ul className="space-y-4 text-sm text-slate-600 flex-grow">
-                                <li className="flex items-center gap-3">
-                                    <i className="fa-solid fa-check text-green-500"></i> 1 Resume
-                                </li>
-                                <li className="flex items-center gap-3">
-                                    <i className="fa-solid fa-check text-green-500"></i> Limited Templates
-                                </li>
-                                <li className="flex items-center gap-3">
-                                    <i className="fa-solid fa-check text-green-500"></i> Basic ATS Score
-                                </li>
-                                <li className="flex items-center gap-3">
-                                    <i className="fa-solid fa-check text-green-500"></i> Resume Upload
-                                </li>
-                                <li className="flex items-center gap-3 text-slate-400">
-                                    <i className="fa-solid fa-xmark"></i> AI Optimization
-                                </li>
-                                <li className="flex items-center gap-3 text-slate-400">
-                                    <i className="fa-solid fa-xmark"></i> PDF Download
-                                </li>
-                            </ul>
+                    {loading ? (
+                        <div className="text-center py-20">
+                            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+                            <p className="mt-4 text-slate-600">Loading pricing plans...</p>
                         </div>
+                    ) : (
+                        <div className="grid md:grid-cols-3 gap-8">
+                            {pricingPlans.map((plan, index) => {
+                                const isDark = plan.theme === 'dark';
+                                const delay = `${0.3 + (index * 0.1)}s`;
 
-                        {/* Pro Plan */}
-                        <div className="bg-slate-900 rounded-2xl p-8 border-2 border-indigo-500 pricing-card flex flex-col relative transform md:-translate-y-4 shadow-2xl animate-[fadeUp_0.8s_ease-out_forwards] [animation-delay:0.4s]">
-                            <div className="absolute top-0 right-0 bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-bl-xl rounded-tr-lg animate-pulse">
-                                MOST POPULAR
-                            </div>
-                            <div className="mb-4">
-                                <h3 className="text-xl font-bold text-white">Pro</h3>
-                                <p className="text-sm text-indigo-200 mt-1">Best for job seekers</p>
-                            </div>
-                            <div className="mb-6">
-                                <span className="text-4xl font-bold text-white">
-                                    {isYearly ? '₹4,999' : '₹499'}
-                                </span>
-                                <span className="text-slate-400">/{isYearly ? 'year' : 'month'}</span>
-                            </div>
-                            <Link
-                                href="#"
-                                className="block w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-center rounded-xl transition-colors mb-8 shadow-lg shadow-indigo-500/25 transform hover:scale-105 active:scale-95"
-                            >
-                                Upgrade to Pro
-                            </Link>
-                            <ul className="space-y-4 text-sm text-slate-300 flex-grow">
-                                <li className="flex items-center gap-3">
-                                    <i className="fa-solid fa-check text-indigo-400"></i> Unlimited Resumes
-                                </li>
-                                <li className="flex items-center gap-3">
-                                    <i className="fa-solid fa-check text-indigo-400"></i> All Premium Templates
-                                </li>
-                                <li className="flex items-center gap-3">
-                                    <i className="fa-solid fa-check text-indigo-400"></i> AI Resume Optimization
-                                </li>
-                                <li className="flex items-center gap-3">
-                                    <i className="fa-solid fa-check text-indigo-400"></i> ATS Keyword Matching
-                                </li>
-                                <li className="flex items-center gap-3">
-                                    <i className="fa-solid fa-check text-indigo-400"></i> PDF & DOCX Downloads
-                                </li>
-                                <li className="flex items-center gap-3">
-                                    <i className="fa-solid fa-check text-indigo-400"></i> Priority Support
-                                </li>
-                            </ul>
+                                return (
+                                    <div
+                                        key={plan.id}
+                                        className={`rounded-2xl p-8 border ${isDark
+                                            ? 'bg-slate-900 border-2 border-indigo-500 relative transform md:-translate-y-4 shadow-2xl'
+                                            : 'bg-white border-slate-200'
+                                            } pricing-card flex flex-col animate-[fadeUp_0.8s_ease-out_forwards]`}
+                                        style={{ animationDelay: delay }}
+                                    >
+                                        {plan.badge_text && (
+                                            <div className="absolute top-0 right-0 bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-bl-xl rounded-tr-lg animate-pulse">
+                                                {plan.badge_text}
+                                            </div>
+                                        )}
+
+                                        <div className="mb-4">
+                                            <h3 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                                {plan.name}
+                                            </h3>
+                                            <p className={`text-sm mt-1 ${isDark ? 'text-indigo-200' : 'text-slate-500'}`}>
+                                                {plan.description}
+                                            </p>
+                                        </div>
+
+                                        <div className="mb-6">
+                                            <span className={`text-4xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                                {isYearly
+                                                    ? plan.pricing[detectedCurrency.toLowerCase() as 'usd' | 'inr' | 'eur'].formatted_yearly
+                                                    : plan.pricing[detectedCurrency.toLowerCase() as 'usd' | 'inr' | 'eur'].formatted_monthly
+                                                }
+                                            </span>
+                                            <span className="text-slate-400">
+                                                /{plan.pricing.inr.monthly === 0 ? 'forever' : (isYearly ? 'year' : 'month')}
+                                            </span>
+                                        </div>
+
+                                        <Link
+                                            href={plan.button_link}
+                                            className={`block w-full py-3 px-4 font-bold text-center rounded-xl transition-colors mb-8 transform hover:scale-105 active:scale-95 ${isDark
+                                                    ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/25'
+                                                    : plan.pricing.inr.monthly === 0
+                                                        ? 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                                                        : 'bg-white border-2 border-slate-900 hover:bg-slate-50 text-slate-900'
+                                                }`}
+                                        >
+                                            {plan.button_text}
+                                        </Link>
+
+                                        <ul className={`space-y-4 text-sm flex-grow ${isDark ? 'text-slate-300' : 'text-slate-600'
+                                            }`}>
+                                            {plan.features.map((feature, idx) => (
+                                                <li
+                                                    key={idx}
+                                                    className={`flex items-center gap-3 ${!feature.included ? 'text-slate-400' : ''
+                                                        }`}
+                                                >
+                                                    <i className={`fa-solid ${feature.included
+                                                            ? isDark
+                                                                ? 'fa-check text-indigo-400'
+                                                                : plan.pricing[detectedCurrency.toLowerCase() as 'usd' | 'inr' | 'eur'].monthly === 0
+                                                                    ? 'fa-check text-green-500'
+                                                                    : 'fa-check text-indigo-600'
+                                                            : 'fa-xmark'
+                                                        }`}></i>
+                                                    {feature.text.includes('Everything in') ? (
+                                                        <strong>{feature.text}</strong>
+                                                    ) : (
+                                                        feature.text
+                                                    )}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                );
+                            })}
                         </div>
-
-                        {/* Career+ Plan */}
-                        <div className="bg-white rounded-2xl p-8 border border-slate-200 pricing-card flex flex-col animate-[fadeUp_0.8s_ease-out_forwards] [animation-delay:0.5s]">
-                            <div className="mb-4">
-                                <h3 className="text-xl font-bold text-slate-900">Career+</h3>
-                                <p className="text-sm text-slate-500 mt-1">For serious professionals</p>
-                            </div>
-                            <div className="mb-6">
-                                <span className="text-4xl font-bold text-slate-900">
-                                    {isYearly ? '₹9,999' : '₹999'}
-                                </span>
-                                <span className="text-slate-400">/{isYearly ? 'year' : 'month'}</span>
-                            </div>
-                            <Link
-                                href="#"
-                                className="block w-full py-3 px-4 bg-white border-2 border-slate-900 hover:bg-slate-50 text-slate-900 font-bold text-center rounded-xl transition-colors mb-8 transform hover:scale-105 active:scale-95"
-                            >
-                                Go Premium
-                            </Link>
-                            <ul className="space-y-4 text-sm text-slate-600 flex-grow">
-                                <li className="flex items-center gap-3">
-                                    <i className="fa-solid fa-check text-indigo-600"></i> <strong>Everything in Pro</strong>
-                                </li>
-                                <li className="flex items-center gap-3">
-                                    <i className="fa-solid fa-check text-indigo-600"></i> Advanced ATS Analysis
-                                </li>
-                                <li className="flex items-center gap-3">
-                                    <i className="fa-solid fa-check text-indigo-600"></i> Job Description Matcher
-                                </li>
-                                <li className="flex items-center gap-3">
-                                    <i className="fa-solid fa-check text-indigo-600"></i> Cover Letter Generator
-                                </li>
-                                <li className="flex items-center gap-3">
-                                    <i className="fa-solid fa-check text-indigo-600"></i> Personal Branding Themes
-                                </li>
-                                <li className="flex items-center gap-3">
-                                    <i className="fa-solid fa-check text-indigo-600"></i> Early Access Features
-                                </li>
-                            </ul>
-                        </div>
-
-                    </div>
+                    )}
                 </div>
             </section>
 
@@ -192,44 +232,121 @@ export default function PricingPage() {
                 <div className="container mx-auto px-6 max-w-4xl">
                     <h2 className="text-3xl font-display font-bold text-center text-slate-900 mb-12">Detailed Comparison</h2>
 
-                    <div className="overflow-x-auto bg-white rounded-2xl shadow-sm border border-slate-200 animate-[fadeUp_0.8s_ease-out_forwards] [animation-delay:0.6s]">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-slate-50 border-b border-slate-200">
-                                    <th className="p-4 pl-8 font-semibold text-slate-600">Features</th>
-                                    <th className="p-4 text-center font-bold text-slate-700">Free</th>
-                                    <th className="p-4 text-center font-bold text-indigo-600 bg-indigo-50/50">Pro</th>
-                                    <th className="p-4 text-center font-bold text-slate-900">Career+</th>
-                                </tr>
-                            </thead>
-                            <tbody className="text-sm">
-                                <tr className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                                    <td className="p-4 pl-8 text-slate-700">Resumes</td>
-                                    <td className="p-4 text-center text-slate-500">1</td>
-                                    <td className="p-4 text-center font-bold text-slate-900 bg-indigo-50/20">Unlimited</td>
-                                    <td className="p-4 text-center font-bold text-slate-900">Unlimited</td>
-                                </tr>
-                                <tr className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                                    <td className="p-4 pl-8 text-slate-700">AI Rewrites</td>
-                                    <td className="p-4 text-center text-slate-300"><i className="fa-solid fa-minus"></i></td>
-                                    <td className="p-4 text-center text-green-500 bg-indigo-50/20"><i className="fa-solid fa-check"></i></td>
-                                    <td className="p-4 text-center text-green-500"><i className="fa-solid fa-check"></i></td>
-                                </tr>
-                                <tr className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                                    <td className="p-4 pl-8 text-slate-700">Cover Letter Gen</td>
-                                    <td className="p-4 text-center text-slate-300"><i className="fa-solid fa-minus"></i></td>
-                                    <td className="p-4 text-center text-slate-300 bg-indigo-50/20"><i className="fa-solid fa-minus"></i></td>
-                                    <td className="p-4 text-center text-green-500"><i className="fa-solid fa-check"></i></td>
-                                </tr>
-                                <tr className="hover:bg-slate-50 transition-colors">
-                                    <td className="p-4 pl-8 text-slate-700">Export Formats</td>
-                                    <td className="p-4 text-center text-slate-500">TXT</td>
-                                    <td className="p-4 text-center text-slate-900 bg-indigo-50/20">PDF, DOCX</td>
-                                    <td className="p-4 text-center text-slate-900">PDF, DOCX</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                    {loading ? (
+                        <div className="text-center py-10">
+                            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                        </div>
+                    ) : pricingPlans.length > 0 && (
+                        <div className="overflow-x-auto bg-white rounded-2xl shadow-sm border border-slate-200 animate-[fadeUp_0.8s_ease-out_forwards] [animation-delay:0.6s]">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="bg-slate-50 border-b border-slate-200">
+                                        <th className="p-4 pl-8 font-semibold text-slate-600">Features</th>
+                                        {pricingPlans.map((plan, idx) => (
+                                            <th
+                                                key={plan.id}
+                                                className={`p-4 text-center font-bold ${plan.is_popular
+                                                    ? 'text-indigo-600 bg-indigo-50/50'
+                                                    : 'text-slate-700'
+                                                    }`}
+                                            >
+                                                {plan.name}
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="text-sm">
+                                    {/* Resumes Row */}
+                                    <tr className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                                        <td className="p-4 pl-8 text-slate-700">Resumes</td>
+                                        {pricingPlans.map((plan, idx) => (
+                                            <td
+                                                key={plan.id}
+                                                className={`p-4 text-center ${plan.limits.max_resumes === null
+                                                    ? 'font-bold text-slate-900'
+                                                    : 'text-slate-500'
+                                                    } ${plan.is_popular ? 'bg-indigo-50/20' : ''}`}
+                                            >
+                                                {plan.limits.max_resumes === null ? 'Unlimited' : plan.limits.max_resumes}
+                                            </td>
+                                        ))}
+                                    </tr>
+
+                                    {/* Templates Row */}
+                                    <tr className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                                        <td className="p-4 pl-8 text-slate-700">Templates</td>
+                                        {pricingPlans.map((plan) => (
+                                            <td
+                                                key={plan.id}
+                                                className={`p-4 text-center ${plan.limits.max_templates === null
+                                                    ? 'font-bold text-slate-900'
+                                                    : 'text-slate-500'
+                                                    } ${plan.is_popular ? 'bg-indigo-50/20' : ''}`}
+                                            >
+                                                {plan.limits.max_templates === null ? 'Unlimited' : plan.limits.max_templates}
+                                            </td>
+                                        ))}
+                                    </tr>
+
+                                    {/* AI Requests Row */}
+                                    <tr className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                                        <td className="p-4 pl-8 text-slate-700">AI Requests/Month</td>
+                                        {pricingPlans.map((plan) => (
+                                            <td
+                                                key={plan.id}
+                                                className={`p-4 text-center ${plan.is_popular ? 'bg-indigo-50/20' : ''}`}
+                                            >
+                                                {plan.limits.max_ai_requests_per_month === null ? (
+                                                    <span className="font-bold text-slate-900">Unlimited</span>
+                                                ) : plan.limits.max_ai_requests_per_month === 0 ? (
+                                                    <i className="fa-solid fa-minus text-slate-300"></i>
+                                                ) : (
+                                                    <span className="text-slate-500">{plan.limits.max_ai_requests_per_month}</span>
+                                                )}
+                                            </td>
+                                        ))}
+                                    </tr>
+
+                                    {/* Downloads Row */}
+                                    <tr className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                                        <td className="p-4 pl-8 text-slate-700">Downloads/Month</td>
+                                        {pricingPlans.map((plan) => (
+                                            <td
+                                                key={plan.id}
+                                                className={`p-4 text-center ${plan.limits.max_downloads_per_month === null
+                                                    ? 'font-bold text-slate-900'
+                                                    : 'text-slate-500'
+                                                    } ${plan.is_popular ? 'bg-indigo-50/20' : ''}`}
+                                            >
+                                                {plan.limits.max_downloads_per_month === null
+                                                    ? 'Unlimited'
+                                                    : plan.limits.max_downloads_per_month}
+                                            </td>
+                                        ))}
+                                    </tr>
+
+                                    {/* Export Formats Row */}
+                                    <tr className="hover:bg-slate-50 transition-colors">
+                                        <td className="p-4 pl-8 text-slate-700">Export Formats</td>
+                                        {pricingPlans.map((plan) => {
+                                            const formats = [];
+                                            if (plan.limits.can_export_pdf) formats.push('PDF');
+                                            if (plan.limits.can_export_docx) formats.push('DOCX');
+
+                                            return (
+                                                <td
+                                                    key={plan.id}
+                                                    className={`p-4 text-center text-slate-900 ${plan.is_popular ? 'bg-indigo-50/20' : ''}`}
+                                                >
+                                                    {formats.length > 0 ? formats.join(', ') : 'TXT'}
+                                                </td>
+                                            );
+                                        })}
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                 </div>
             </section>
 
