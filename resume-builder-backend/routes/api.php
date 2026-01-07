@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\PdfExportController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\SocialAuthController;
 use App\Http\Controllers\Api\EmailVerificationController;
+use App\Http\Controllers\Api\ATSController;
 
 /*
 |--------------------------------------------------------------------------
@@ -46,3 +47,8 @@ Route::post('uploads/job-description', [UploadController::class, 'parseJobDescri
 
 // PDF Export
 Route::post('export/pdf', [PdfExportController::class, 'export']);
+
+// ATS Analysis
+Route::prefix('ats')->group(function () {
+    Route::post('analyze', [ATSController::class, 'analyze']);
+});

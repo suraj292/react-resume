@@ -70,10 +70,10 @@ export function TabUpload() {
             // Clear upload state
             setUploadId(null);
 
-            // Show success and switch to Manual tab
+            // Show success and switch to AI tab to show ATS score
             setTimeout(() => {
-                toast.success('Resume data applied! Check the Manual tab and Live Preview.');
-                setActiveTab('manual');
+                toast.success('Resume data applied! Check your ATS score in the AI tab.');
+                setActiveTab('ai');
             }, 1000);
         }
     };

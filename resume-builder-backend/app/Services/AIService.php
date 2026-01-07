@@ -39,7 +39,81 @@ class AIService
     }
 
     /**
-     * Parse resume using OpenAI
+     * Generate content using AI (general purpose)
+     */
+    public function generateContent(string $prompt): string
+    {
+        if ($this->provider === 'gemini') {
+            return $this->generateContentWithGemini($prompt);
+        }
+
+        return $this->generateContentWithOpenAI($prompt);
+    }
+
+    /**
+     * Generate content using OpenAI
+     */
+    protected function generateContentWithOpenAI(string $prompt): string
+    {
+        $client = OpenAI::client(config('services.openai.api_key'));
+
+        try {
+            $response = $client->chat()->create([
+                'model' => config('services.openai.model', 'gpt-4o'),
+                'messages' => [
+                    ['role' => 'system', 'content' => 'You are a helpful assistant that provides structured data analysis.'],
+                    ['role' => 'user', 'content' => $prompt],
+                ],
+                'temperature' => 0.3,
+                'max_tokens' => 2000,
+            ]);
+
+            return $response->choices[0]->message->content;
+        } catch (\Exception $e) {
+            \Log::error('OpenAI content generation failed', ['error' => $e->getMessage()]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Generate content using Gemini
+     */
+    protected function generateContentWithGemini(string $prompt): string
+    {
+        $apiKey = config('services.gemini.api_key');
+        $model = config('services.gemini.model', 'gemini-pro');
+
+        try {
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+            ])->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}", [
+                'contents' => [
+                    [
+                        'parts' => [
+                            ['text' => $prompt]
+                        ]
+                    ]
+                ],
+                'generationConfig' => [
+                    'temperature' => 0.3,
+                    'maxOutputTokens' => 4096,
+                ]
+            ]);
+
+            if (!$response->successful()) {
+                throw new \Exception('Gemini API request failed: ' . $response->body());
+            }
+
+            $data = $response->json();
+            return $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
+        } catch (\Exception $e) {
+            \Log::error('Gemini content generation failed', ['error' => $e->getMessage()]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Get the resume parsing prompt
      */
     protected function parseResumeWithOpenAI(string $text): array
     {

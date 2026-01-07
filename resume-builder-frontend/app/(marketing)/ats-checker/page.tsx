@@ -4,14 +4,17 @@ import { useState, useEffect } from 'react';
 import MarketingLayout from '@/components/layout/marketing-layout';
 import { useAuth } from '@/contexts/AuthContext';
 import AuthRequiredModal from '@/components/auth-required-modal';
+import { analyzeResume } from '@/lib/ats-api';
 
 export default function ATSCheckerPage() {
     const [activeTab, setActiveTab] = useState('upload');
     const [fileName, setFileName] = useState('');
+    const [resumeText, setResumeText] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [showResults, setShowResults] = useState(false);
     const [loadingText, setLoadingText] = useState('Parsing keywords and formatting...');
     const [score, setScore] = useState(0);
+    const [analysisData, setAnalysisData] = useState<any>(null);
     const { user, loading } = useAuth();
     const [showAuthModal, setShowAuthModal] = useState(false);
 
@@ -22,11 +25,33 @@ export default function ATSCheckerPage() {
         }
     }, [user, loading]);
 
+    // Check for resume data from builder
+    useEffect(() => {
+        const storedData = localStorage.getItem('ats-resume-data');
+        if (storedData) {
+            try {
+                const { text, timestamp } = JSON.parse(storedData);
+                // Check if data is less than 5 minutes old
+                if (Date.now() - timestamp < 5 * 60 * 1000) {
+                    setResumeText(text);
+                    setActiveTab('paste');
+                    localStorage.removeItem('ats-resume-data');
+                    // Auto-start analysis after a brief delay
+                    setTimeout(() => {
+                        startAnalysis(text);
+                    }, 500);
+                }
+            } catch (e) {
+                console.error('Failed to parse stored resume data', e);
+            }
+        }
+    }, []);
+
     // Animate score counter
     useEffect(() => {
-        if (showResults) {
+        if (showResults && analysisData) {
             let current = 0;
-            const target = 72;
+            const target = analysisData.score;
             const interval = setInterval(() => {
                 if (current >= target) {
                     clearInterval(interval);
@@ -37,26 +62,53 @@ export default function ATSCheckerPage() {
             }, 20);
             return () => clearInterval(interval);
         }
-    }, [showResults]);
+    }, [showResults, analysisData]);
 
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
-            setFileName(e.target.files[0].name);
+            const file = e.target.files[0];
+            setFileName(file.name);
+
+            // Read file content
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const text = event.target?.result as string;
+                setResumeText(text);
+            };
+            reader.readAsText(file);
         }
     };
 
-    const startAnalysis = () => {
+    const startAnalysis = async (textToAnalyze?: string) => {
+        const text = textToAnalyze || resumeText;
+
+        if (!text || text.trim().length < 50) {
+            alert('Please upload or paste your resume first');
+            return;
+        }
+
         setIsLoading(true);
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
-        setTimeout(() => setLoadingText('Extracting text data...'), 1000);
-        setTimeout(() => setLoadingText('Checking keywords against job description...'), 2000);
-        setTimeout(() => setLoadingText('Calculating impact score...'), 3000);
+        try {
+            setTimeout(() => setLoadingText('Extracting text data...'), 500);
+            setTimeout(() => setLoadingText('Analyzing keywords and skills...'), 1500);
+            setTimeout(() => setLoadingText('Checking formatting quality...'), 2500);
+            setTimeout(() => setLoadingText('Evaluating content impact...'), 3500);
 
-        setTimeout(() => {
+            // Call AI analysis API
+            const result = await analyzeResume(text);
+
+            setAnalysisData(result);
             setIsLoading(false);
             setShowResults(true);
-        }, 4000);
+        } catch (error) {
+            console.error('Analysis failed:', error);
+            setLoadingText('Analysis failed. Please try again.');
+            setTimeout(() => {
+                setIsLoading(false);
+            }, 2000);
+        }
     };
 
     const targetScore = 72;
@@ -185,6 +237,8 @@ export default function ATSCheckerPage() {
                                 {activeTab === 'paste' && (
                                     <div>
                                         <textarea
+                                            value={resumeText}
+                                            onChange={(e) => setResumeText(e.target.value)}
                                             className="w-full h-64 p-4 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none resize-none text-sm leading-relaxed"
                                             placeholder="Copy and paste your resume content here..."
                                         ></textarea>
@@ -194,7 +248,7 @@ export default function ATSCheckerPage() {
                                 {/* Analyze Button */}
                                 <div className="mt-8">
                                     <button
-                                        onClick={startAnalysis}
+                                        onClick={() => startAnalysis()}
                                         className="w-full py-4 rounded-xl bg-gradient-to-r from-slate-900 to-slate-800 hover:from-slate-800 hover:to-slate-700 text-white font-bold text-lg shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-3 relative overflow-hidden group"
                                     >
                                         <span className="relative z-10 group-hover:hidden">Analyze Resume</span>
@@ -270,11 +324,18 @@ export default function ATSCheckerPage() {
                                 </div>
                             </div>
 
-                            <div className="inline-block px-4 py-1.5 rounded-full bg-yellow-100 text-yellow-800 font-bold text-sm mb-4">
-                                Needs Improvement
+                            <div className={`inline-block px-4 py-1.5 rounded-full font-bold text-sm mb-4 ${analysisData?.rating === 'excellent' ? 'bg-green-100 text-green-800' :
+                                analysisData?.rating === 'good' ? 'bg-yellow-100 text-yellow-800' :
+                                    analysisData?.rating === 'fair' ? 'bg-orange-100 text-orange-800' :
+                                        'bg-red-100 text-red-800'
+                                }`}>
+                                {analysisData?.rating === 'excellent' ? 'Excellent' :
+                                    analysisData?.rating === 'good' ? 'Good' :
+                                        analysisData?.rating === 'fair' ? 'Fair' :
+                                            'Needs Improvement'}
                             </div>
                             <p className="text-sm text-slate-500 leading-relaxed">
-                                Your resume is parseable but lacks specific keywords from the job description.
+                                {analysisData?.recommendations?.[0] || 'Your resume has been analyzed.'}
                             </p>
                         </div>
 
@@ -286,22 +347,25 @@ export default function ATSCheckerPage() {
                                     <div className="w-10 h-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-lg mb-3">
                                         <i className="fa-solid fa-check"></i>
                                     </div>
-                                    <span className="text-2xl font-bold text-slate-900">12/18</span>
+                                    <span className="text-2xl font-bold text-slate-900">
+                                        {analysisData?.keywords?.found || 0}/{(analysisData?.keywords?.found || 0) + (analysisData?.keywords?.missing || 0)}
+                                    </span>
                                     <span className="text-xs text-slate-500 font-medium uppercase mt-1">Keywords Matched</span>
                                 </div>
                                 <div className="bg-white p-6 rounded-2xl border border-slate-100 card-shadow flex flex-col justify-center animate-[slideUp_0.6s_ease-out_forwards] [animation-delay:0.3s]">
                                     <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-lg mb-3">
-                                        <i className="fa-solid fa-briefcase"></i>
+                                        <i className="fa-solid fa-file-lines"></i>
                                     </div>
-                                    <span className="text-2xl font-bold text-slate-900">Mid-Level</span>
-                                    <span className="text-xs text-slate-500 font-medium uppercase mt-1">Experience Detected</span>
+                                    <span className="text-2xl font-bold text-slate-900">{analysisData?.content?.word_count || 0}</span>
+                                    <span className="text-xs text-slate-500 font-medium uppercase mt-1">Total Words</span>
                                 </div>
                                 <div className="bg-white p-6 rounded-2xl border border-slate-100 card-shadow flex flex-col justify-center animate-[slideUp_0.6s_ease-out_forwards] [animation-delay:0.4s]">
-                                    <div className="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-lg mb-3">
-                                        <i className="fa-solid fa-triangle-exclamation"></i>
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg mb-3 ${(analysisData?.formatting?.issues || 0) > 0 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
+                                        }`}>
+                                        <i className={`fa-solid ${(analysisData?.formatting?.issues || 0) > 0 ? 'fa-triangle-exclamation' : 'fa-check'}`}></i>
                                     </div>
-                                    <span className="text-2xl font-bold text-slate-900">3 Errors</span>
-                                    <span className="text-xs text-slate-500 font-medium uppercase mt-1">Critical Issues</span>
+                                    <span className="text-2xl font-bold text-slate-900">{analysisData?.formatting?.issues || 0} {(analysisData?.formatting?.issues || 0) === 1 ? 'Error' : 'Errors'}</span>
+                                    <span className="text-xs text-slate-500 font-medium uppercase mt-1">Formatting Issues</span>
                                 </div>
                             </div>
 
@@ -311,20 +375,22 @@ export default function ATSCheckerPage() {
                                     <i className="fa-solid fa-circle-exclamation"></i> Top Priorities to Fix
                                 </h4>
                                 <ul className="space-y-3">
-                                    <li className="flex items-start gap-3 bg-white p-3 rounded-lg border border-red-100 shadow-sm">
-                                        <i className="fa-solid fa-xmark text-red-500 mt-1"></i>
-                                        <div>
-                                            <span className="block text-sm font-bold text-slate-800">Missing Hard Skills</span>
-                                            <span className="text-xs text-slate-600">You are missing 'Python', 'AWS', and 'Docker' which are critical for this role.</span>
-                                        </div>
-                                    </li>
-                                    <li className="flex items-start gap-3 bg-white p-3 rounded-lg border border-red-100 shadow-sm">
-                                        <i className="fa-solid fa-xmark text-red-500 mt-1"></i>
-                                        <div>
-                                            <span className="block text-sm font-bold text-slate-800">Contact Info Parsing Error</span>
-                                            <span className="text-xs text-slate-600">Your email address is inside a header/footer which some ATS cannot read.</span>
-                                        </div>
-                                    </li>
+                                    {analysisData?.recommendations?.slice(0, 3).map((rec: string, index: number) => (
+                                        <li key={index} className="flex items-start gap-3 bg-white p-3 rounded-lg border border-red-100 shadow-sm">
+                                            <i className="fa-solid fa-xmark text-red-500 mt-1"></i>
+                                            <div>
+                                                <span className="text-sm text-slate-800">{rec}</span>
+                                            </div>
+                                        </li>
+                                    ))}
+                                    {(!analysisData?.recommendations || analysisData.recommendations.length === 0) && (
+                                        <li className="flex items-start gap-3 bg-green-50 p-3 rounded-lg border border-green-100 shadow-sm">
+                                            <i className="fa-solid fa-check text-green-500 mt-1"></i>
+                                            <div>
+                                                <span className="text-sm text-slate-800 font-medium">Great job! No critical issues found.</span>
+                                            </div>
+                                        </li>
+                                    )}
                                 </ul>
                             </div>
                         </div>
@@ -337,36 +403,49 @@ export default function ATSCheckerPage() {
                         <div className="bg-white rounded-2xl p-8 card-shadow border border-slate-100 animate-[slideUp_0.6s_ease-out_forwards] [animation-delay:0.6s]">
                             <div className="flex justify-between items-center mb-6">
                                 <h3 className="font-bold text-lg text-slate-900">Skills Gap Analysis</h3>
-                                <span className="text-xs font-bold bg-slate-100 px-2 py-1 rounded text-slate-600">65% Match</span>
+                                <span className="text-xs font-bold bg-slate-100 px-2 py-1 rounded text-slate-600">
+                                    {analysisData?.keywords ?
+                                        Math.round((analysisData.keywords.found / (analysisData.keywords.found + analysisData.keywords.missing)) * 100)
+                                        : 0}% Match
+                                </span>
                             </div>
 
                             <div className="space-y-6">
                                 <div>
                                     <h4 className="text-xs font-bold text-green-600 uppercase mb-3 flex items-center gap-2">
-                                        <i className="fa-solid fa-check"></i> Found on Resume
+                                        <i className="fa-solid fa-check"></i> Found on Resume ({analysisData?.keywords?.found || 0})
                                     </h4>
                                     <div className="flex flex-wrap gap-2">
-                                        <span className="px-3 py-1.5 bg-green-50 text-green-700 text-sm font-medium rounded-lg border border-green-100">Project Management</span>
-                                        <span className="px-3 py-1.5 bg-green-50 text-green-700 text-sm font-medium rounded-lg border border-green-100">Agile</span>
-                                        <span className="px-3 py-1.5 bg-green-50 text-green-700 text-sm font-medium rounded-lg border border-green-100">Scrum</span>
-                                        <span className="px-3 py-1.5 bg-green-50 text-green-700 text-sm font-medium rounded-lg border border-green-100">Team Leadership</span>
-                                        <span className="px-3 py-1.5 bg-green-50 text-green-700 text-sm font-medium rounded-lg border border-green-100">Communication</span>
+                                        {analysisData?.keywords?.found_list?.map((keyword: string, index: number) => (
+                                            <span key={index} className="px-3 py-1.5 bg-green-50 text-green-700 text-sm font-medium rounded-lg border border-green-100">
+                                                {keyword}
+                                            </span>
+                                        ))}
+                                        {(!analysisData?.keywords?.found_list || analysisData.keywords.found_list.length === 0) && (
+                                            <span className="text-sm text-slate-400 italic">No keywords found</span>
+                                        )}
                                     </div>
                                 </div>
 
                                 <div className="border-t border-slate-100 pt-6">
                                     <h4 className="text-xs font-bold text-red-500 uppercase mb-3 flex items-center gap-2">
-                                        <i className="fa-solid fa-xmark"></i> Missing (Add These!)
+                                        <i className="fa-solid fa-xmark"></i> Missing (Add These!) ({analysisData?.keywords?.missing || 0})
                                     </h4>
                                     <div className="flex flex-wrap gap-2">
-                                        <span className="px-3 py-1.5 bg-red-50 text-red-600 text-sm font-medium rounded-lg border border-red-100 border-dashed">Python</span>
-                                        <span className="px-3 py-1.5 bg-red-50 text-red-600 text-sm font-medium rounded-lg border border-red-100 border-dashed">Data Analysis</span>
-                                        <span className="px-3 py-1.5 bg-red-50 text-red-600 text-sm font-medium rounded-lg border border-red-100 border-dashed">SQL</span>
-                                        <span className="px-3 py-1.5 bg-red-50 text-red-600 text-sm font-medium rounded-lg border border-red-100 border-dashed">JIRA</span>
+                                        {analysisData?.keywords?.missing_list?.map((keyword: string, index: number) => (
+                                            <span key={index} className="px-3 py-1.5 bg-red-50 text-red-600 text-sm font-medium rounded-lg border border-red-100 border-dashed">
+                                                {keyword}
+                                            </span>
+                                        ))}
+                                        {(!analysisData?.keywords?.missing_list || analysisData.keywords.missing_list.length === 0) && (
+                                            <span className="text-sm text-green-600 font-medium">✓ All common keywords found!</span>
+                                        )}
                                     </div>
-                                    <p className="text-xs text-slate-400 mt-3 italic">
-                                        <i className="fa-solid fa-lightbulb text-yellow-400 mr-1"></i> Tip: Add these to your "Skills" section or weave them into bullet points.
-                                    </p>
+                                    {analysisData?.keywords?.missing_list && analysisData.keywords.missing_list.length > 0 && (
+                                        <p className="text-xs text-slate-400 mt-3 italic">
+                                            <i className="fa-solid fa-lightbulb text-yellow-400 mr-1"></i> Tip: Add these to your "Skills" section or weave them into bullet points.
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -450,39 +529,51 @@ export default function ATSCheckerPage() {
                                     <div>
                                         <div className="flex justify-between text-sm mb-1">
                                             <span className="text-slate-300">Action Verbs Usage</span>
-                                            <span className="font-bold text-green-400">Strong (85%)</span>
+                                            <span className={`font-bold ${(analysisData?.content?.action_verbs_percentage || 0) >= 50 ? 'text-green-400' : 'text-yellow-400'}`}>
+                                                {(analysisData?.content?.action_verbs_percentage || 0) >= 50 ? 'Strong' : 'Needs Work'} ({analysisData?.content?.action_verbs_percentage || 0}%)
+                                            </span>
                                         </div>
                                         <div className="w-full bg-slate-700 rounded-full h-2">
-                                            <div className="bg-green-500 h-2 rounded-full w-[85%]"></div>
+                                            <div
+                                                className={`h-2 rounded-full ${(analysisData?.content?.action_verbs_percentage || 0) >= 50 ? 'bg-green-500' : 'bg-yellow-500'}`}
+                                                style={{ width: `${analysisData?.content?.action_verbs_percentage || 0}%` }}
+                                            ></div>
                                         </div>
                                     </div>
                                     <div>
                                         <div className="flex justify-between text-sm mb-1">
                                             <span className="text-slate-300">Quantifiable Results (Numbers/%)</span>
-                                            <span className="font-bold text-red-400">Weak (20%)</span>
+                                            <span className={`font-bold ${(analysisData?.content?.quantifiable_results_percentage || 0) >= 30 ? 'text-green-400' : 'text-red-400'}`}>
+                                                {(analysisData?.content?.quantifiable_results_percentage || 0) >= 30 ? 'Good' : 'Weak'} ({analysisData?.content?.quantifiable_results_percentage || 0}%)
+                                            </span>
                                         </div>
                                         <div className="w-full bg-slate-700 rounded-full h-2">
-                                            <div className="bg-red-500 h-2 rounded-full w-[20%]"></div>
+                                            <div
+                                                className={`h-2 rounded-full ${(analysisData?.content?.quantifiable_results_percentage || 0) >= 30 ? 'bg-green-500' : 'bg-red-500'}`}
+                                                style={{ width: `${analysisData?.content?.quantifiable_results_percentage || 0}%` }}
+                                            ></div>
                                         </div>
-                                        <p className="text-xs text-slate-500 mt-1">Try adding metrics like "Increased revenue by 20%"</p>
+                                        {(analysisData?.content?.quantifiable_results_percentage || 0) < 30 && (
+                                            <p className="text-xs text-slate-500 mt-1">Try adding metrics like "Increased revenue by 20%"</p>
+                                        )}
                                     </div>
                                 </div>
                             </div>
 
                             <div className="md:w-1/3 bg-slate-800 p-6 rounded-xl border border-slate-700">
-                                <h4 className="font-bold text-sm text-slate-300 mb-4 uppercase tracking-wide">Recruiter Simulation</h4>
+                                <h4 className="font-bold text-sm text-slate-300 mb-4 uppercase tracking-wide">Content Metrics</h4>
                                 <div className="space-y-3">
                                     <div className="flex justify-between text-sm border-b border-slate-700 pb-2">
                                         <span className="text-slate-400">Word Count</span>
-                                        <span className="font-mono">642 (Good)</span>
+                                        <span className="font-mono">{analysisData?.content?.word_count || 0} {(analysisData?.content?.word_count || 0) > 500 ? '(Good)' : '(Short)'}</span>
                                     </div>
                                     <div className="flex justify-between text-sm border-b border-slate-700 pb-2">
                                         <span className="text-slate-400">Avg Bullet Length</span>
-                                        <span className="font-mono">14 words</span>
+                                        <span className="font-mono">{analysisData?.content?.avg_bullet_length || 0} words</span>
                                     </div>
                                     <div className="flex justify-between text-sm pb-2">
                                         <span className="text-slate-400">Reading Level</span>
-                                        <span className="font-mono">Grade 10</span>
+                                        <span className="font-mono">{analysisData?.content?.reading_level || 'N/A'}</span>
                                     </div>
                                 </div>
                             </div>
