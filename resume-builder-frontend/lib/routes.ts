@@ -21,6 +21,7 @@ export const ROUTES = {
     CONTACT: '/contact',
     ABOUT: '/about',
     BLOG: '/blog',
+    FAQ: '/faq',
 
     // Legal Pages
     PRIVACY: '/privacy',

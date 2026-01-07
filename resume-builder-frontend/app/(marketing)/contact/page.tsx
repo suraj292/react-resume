@@ -301,7 +301,7 @@ export default function ContactPage() {
                                 Visit Help Center
                             </Link>
                             <Link
-                                href="#"
+                                href={ROUTES.FAQ}
                                 className="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-50 transition-colors"
                             >
                                 Read FAQs
