@@ -26,6 +26,8 @@ export const ROUTES = {
     // Legal Pages
     PRIVACY: '/privacy',
     TERMS: '/terms',
+    REFUND: '/refund-policy',
+    SHIPPING: '/shipping-policy',
 
     // Dashboard Routes (Protected)
     BUILDER: '/builder',
