@@ -2,46 +2,43 @@
 
 import { useResumeStore } from '@/lib/stores/resume-store';
 import { cn } from '@/lib/utils';
-
-const templates = [
-    // Original Templates
-    { id: 'modern', name: 'Modern Executive', category: 'Best for Tech & SaaS' },
-    { id: 'creative', name: 'Creative Sidebar', category: 'Design & Marketing' },
-    { id: 'academic', name: 'Academic Elite', category: 'Formal & Corporate' },
-    { id: 'minimal', name: 'Minimalist Bold', category: 'Clean & Functional' },
-
-    // Executive & Professional
-    { id: 'executive', name: 'Executive', category: 'Senior Leadership' },
-    { id: 'professional', name: 'Professional', category: 'Corporate & Business' },
-    { id: 'classic', name: 'Classic', category: 'Traditional & Formal' },
-
-    // Modern & Tech
-    { id: 'tech', name: 'Tech Developer', category: 'Software & Engineering' },
-    { id: 'gradient', name: 'Gradient Modern', category: 'Creative &  Bold' },
-    { id: 'infographic', name: 'Infographic', category: 'Visual & Creative' },
-
-    // Minimalist & Clean
-    { id: 'swiss', name: 'Swiss Style', category: 'Minimalist & Clean' },
-    { id: 'elegant', name: 'Elegant', category: 'Refined & Sophisticated' },
-    { id: 'vertical', name: 'Vertical Accent', category: 'Modern & Clean' },
-
-    // Structured & Organized
-    { id: 'timeline', name: 'Timeline', category: 'Chronological Focus' },
-    { id: 'split', name: 'Split Column', category: 'Organized & Balanced' },
-    { id: 'columnar', name: 'Three Column', category: 'Information Dense' },
-    { id: 'boxed', name: 'Boxed Layout', category: 'Structured & Clear' },
-
-    // Bold & Colorful
-    { id: 'bold', name: 'Bold Impact', category: 'Strong & Confident' },
-    { id: 'colorblock', name: 'Color Block', category: 'Modern & Vibrant' },
-    { id: 'striped', name: 'Striped', category: 'Dynamic & Engaging' },
-    { id: 'bordered', name: 'Bordered', category: 'Classic & Framed' },
-    { id: 'compact', name: 'Compact', category: 'Space Efficient' },
-];
+import { templateAPI, TemplateData } from '@/lib/api';
+import { useEffect, useState } from 'react';
+import { useAuthStore } from '@/lib/stores/auth-store';
 
 export function TabTemplates() {
     const { currentResume, setTemplate } = useResumeStore();
+    const { user } = useAuthStore();
     const selectedTemplate = currentResume?.templateId || 'modern';
+
+    const [templates, setTemplates] = useState<TemplateData[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    // Fetch templates from API
+    useEffect(() => {
+        const fetchTemplates = async () => {
+            try {
+                setLoading(true);
+                const response = await templateAPI.getAll();
+                if (response.data.success) {
+                    setTemplates(response.data.data);
+                }
+            } catch (err) {
+                console.error('Error fetching templates:', err);
+                setError('Failed to load templates. Using default templates.');
+                // Fallback to hardcoded templates if API fails
+                setTemplates(getFallbackTemplates());
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchTemplates();
+    }, []);
+
+    // Check if user has premium access
+    const hasPremiumAccess = user?.subscription?.status === 'active' || user?.subscription?.plan_type === 'premium';
 
     // Color mapping
     const colors: Record<string, string> = {
@@ -54,6 +51,26 @@ export function TabTemplates() {
     };
 
     const accentColor = colors[currentResume?.colorId || 'indigo'] || colors.indigo;
+
+    // Handle template selection
+    const handleTemplateSelect = async (template: TemplateData) => {
+        // Check if template is premium and user doesn't have access
+        if (template.is_premium && !hasPremiumAccess) {
+            // Show upgrade modal or message
+            alert('This is a premium template. Please upgrade your plan to use it.');
+            return;
+        }
+
+        // Track analytics
+        try {
+            await templateAPI.trackSelection(template.id);
+        } catch (err) {
+            console.error('Failed to track template selection:', err);
+        }
+
+        // Set the template
+        setTemplate(template.id);
+    };
 
     // Render template thumbnail
     const renderThumbnail = (templateId: string) => {
@@ -125,278 +142,7 @@ export function TabTemplates() {
                     </div>
                 );
 
-            case 'executive':
-                return (
-                    <div className={`${baseClasses} p-3`}>
-                        <div className="text-center border-b pb-2 mb-2" style={{ borderColor: accentColor }}>
-                            <div className="h-4 w-2/3 mx-auto rounded-sm" style={{ backgroundColor: 'rgb(15, 23, 42)' }} />
-                            <div className="h-1 bg-slate-300 w-1/2 mx-auto rounded-full mt-1" />
-                        </div>
-                        <div className="space-y-2">
-                            <div className="h-1 bg-slate-200 w-full" />
-                            <div className="h-1 bg-slate-200 w-full" />
-                        </div>
-                    </div>
-                );
-
-            case 'professional':
-                return (
-                    <div className={`${baseClasses} p-3`}>
-                        <div className="h-3 w-2/3 rounded-sm mb-2" style={{ backgroundColor: 'rgb(15, 23, 42)' }} />
-                        <div className="flex gap-2 text-[6px] mb-3">
-                            <div className="h-0.5 bg-slate-300 w-1/4" />
-                            <div className="h-0.5 bg-slate-300 w-1/4" />
-                        </div>
-                        <div className="border-l-2 pl-2 space-y-1" style={{ borderColor: accentColor }}>
-                            <div className="h-1 bg-slate-200 w-full" />
-                            <div className="h-1 bg-slate-200 w-3/4" />
-                        </div>
-                    </div>
-                );
-
-            case 'classic':
-                return (
-                    <div className={`${baseClasses} p-3`}>
-                        <div className="text-center mb-3">
-                            <div className="h-3 w-2/3 mx-auto rounded-sm mb-1" style={{ backgroundColor: 'rgb(15, 23, 42)' }} />
-                            <div className="h-0.5 bg-slate-300 w-1/2 mx-auto rounded-full" />
-                        </div>
-                        <div className="border-t pt-2" style={{ borderColor: accentColor }}>
-                            <div className="space-y-1">
-                                <div className="h-1 bg-slate-200 w-full" />
-                                <div className="h-1 bg-slate-200 w-full" />
-                            </div>
-                        </div>
-                    </div>
-                );
-
-            case 'tech':
-                return (
-                    <div className={`${baseClasses} p-3 space-y-2`}>
-                        <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-md" style={{ backgroundColor: accentColor }} />
-                            <div className="flex-1 space-y-1">
-                                <div className="h-1.5 w-2/3 rounded" style={{ backgroundColor: 'rgb(15, 23, 42)' }} />
-                                <div className="h-0.5 bg-slate-300 w-1/2 rounded" />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-3 gap-1">
-                            <div className="h-4 rounded" style={{ backgroundColor: `${accentColor}20` }} />
-                            <div className="h-4 rounded" style={{ backgroundColor: `${accentColor}20` }} />
-                            <div className="h-4 rounded" style={{ backgroundColor: `${accentColor}20` }} />
-                        </div>
-                    </div>
-                );
-
-            case 'gradient':
-                return (
-                    <div className={`${baseClasses} p-3 relative overflow-hidden`}>
-                        <div className="absolute top-0 right-0 w-20 h-20 rounded-full opacity-20"
-                            style={{ background: `radial-gradient(circle, ${accentColor}, transparent)` }} />
-                        <div className="h-4 w-2/3 rounded-sm mb-2" style={{
-                            background: `linear-gradient(90deg, ${accentColor}, ${accentColor}80)`
-                        }} />
-                        <div className="space-y-1">
-                            <div className="h-1 bg-slate-200 w-full" />
-                            <div className="h-1 bg-slate-200 w-3/4" />
-                        </div>
-                    </div>
-                );
-
-            case 'infographic':
-                return (
-                    <div className={`${baseClasses} p-2`}>
-                        <div className="flex items-center gap-1.5 mb-2">
-                            <div className="w-6 h-6 rounded-full" style={{ backgroundColor: accentColor }} />
-                            <div className="h-2 w-1/2 rounded" style={{ backgroundColor: 'rgb(15, 23, 42)' }} />
-                        </div>
-                        <div className="flex gap-1">
-                            <div className="w-1/4 space-y-1">
-                                <div className="h-8 rounded" style={{ backgroundColor: `${accentColor}40` }} />
-                            </div>
-                            <div className="flex-1 space-y-1">
-                                <div className="h-1 bg-slate-200 w-full" />
-                                <div className="h-1 bg-slate-200 w-3/4" />
-                            </div>
-                        </div>
-                    </div>
-                );
-
-            case 'swiss':
-                return (
-                    <div className={`${baseClasses} p-4 space-y-3`}>
-                        <div className="h-3 w-1/2 rounded-none bg-black" />
-                        <div className="space-y-1.5">
-                            <div className="h-0.5 bg-slate-300 w-full" />
-                            <div className="h-0.5 bg-slate-300 w-full" />
-                            <div className="h-0.5 bg-slate-300 w-2/3" />
-                        </div>
-                        <div className="h-px w-full" style={{ backgroundColor: accentColor }} />
-                    </div>
-                );
-
-            case 'elegant':
-                return (
-                    <div className={`${baseClasses} p-3 space-y-2`}>
-                        <div className="text-center">
-                            <div className="h-3 w-2/3 mx-auto rounded-sm mb-1" style={{
-                                backgroundColor: accentColor,
-                                opacity: 0.2
-                            }} />
-                            <div className="h-1 bg-slate-800 w-1/2 mx-auto" />
-                        </div>
-                        <div className="space-y-1 pt-2">
-                            <div className="h-0.5 bg-slate-200 w-full" />
-                            <div className="h-0.5 bg-slate-200 w-full" />
-                        </div>
-                    </div>
-                );
-
-            case 'vertical':
-                return (
-                    <div className={`${baseClasses} flex`}>
-                        <div className="w-1" style={{ backgroundColor: accentColor }} />
-                        <div className="flex-1 p-3 space-y-2">
-                            <div className="h-3 w-2/3 rounded-sm" style={{ backgroundColor: 'rgb(15, 23, 42)' }} />
-                            <div className="space-y-1">
-                                <div className="h-1 bg-slate-200 w-full" />
-                                <div className="h-1 bg-slate-200 w-3/4" />
-                            </div>
-                        </div>
-                    </div>
-                );
-
-            case 'timeline':
-                return (
-                    <div className={`${baseClasses} p-3`}>
-                        <div className="flex gap-2">
-                            <div className="flex flex-col items-center">
-                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: accentColor }} />
-                                <div className="w-px flex-1 bg-slate-300" />
-                            </div>
-                            <div className="flex-1 space-y-1">
-                                <div className="h-1.5 bg-slate-800 w-2/3" />
-                                <div className="h-0.5 bg-slate-200 w-full" />
-                                <div className="h-0.5 bg-slate-200 w-3/4" />
-                            </div>
-                        </div>
-                    </div>
-                );
-
-            case 'split':
-                return (
-                    <div className={`${baseClasses} flex gap-2 p-2`}>
-                        <div className="flex-1 space-y-2">
-                            <div className="h-2 bg-slate-800 w-3/4" />
-                            <div className="space-y-1">
-                                <div className="h-0.5 bg-slate-200 w-full" />
-                                <div className="h-0.5 bg-slate-200 w-2/3" />
-                            </div>
-                        </div>
-                        <div className="w-px" style={{ backgroundColor: accentColor }} />
-                        <div className="flex-1 space-y-2">
-                            <div className="h-2 w-3/4" style={{ backgroundColor: accentColor }} />
-                            <div className="space-y-1">
-                                <div className="h-0.5 bg-slate-200 w-full" />
-                            </div>
-                        </div>
-                    </div>
-                );
-
-            case 'columnar':
-                return (
-                    <div className={`${baseClasses} flex gap-1 p-2`}>
-                        <div className="flex-1 space-y-1">
-                            <div className="h-1.5 bg-slate-800 w-full" />
-                            <div className="h-0.5 bg-slate-200 w-full" />
-                        </div>
-                        <div className="flex-1 space-y-1">
-                            <div className="h-1.5 w-full" style={{ backgroundColor: accentColor }} />
-                            <div className="h-0.5 bg-slate-200 w-full" />
-                        </div>
-                        <div className="flex-1 space-y-1">
-                            <div className="h-1.5 bg-slate-300 w-full" />
-                            <div className="h-0.5 bg-slate-200 w-full" />
-                        </div>
-                    </div>
-                );
-
-            case 'boxed':
-                return (
-                    <div className={`${baseClasses} p-2 space-y-2`}>
-                        <div className="border-2 rounded p-1.5" style={{ borderColor: accentColor }}>
-                            <div className="h-1.5 bg-slate-800 w-2/3" />
-                        </div>
-                        <div className="border-2 border-slate-200 rounded p-1.5">
-                            <div className="h-1 bg-slate-200 w-full" />
-                        </div>
-                    </div>
-                );
-
-            case 'bold':
-                return (
-                    <div className={`${baseClasses} p-3`}>
-                        <div className="h-8 w-full rounded mb-2" style={{ backgroundColor: accentColor }} />
-                        <div className="space-y-1.5">
-                            <div className="h-1.5 bg-slate-800 w-3/4" />
-                            <div className="h-1 bg-slate-200 w-full" />
-                            <div className="h-1 bg-slate-200 w-2/3" />
-                        </div>
-                    </div>
-                );
-
-            case 'colorblock':
-                return (
-                    <div className={`${baseClasses} p-2 space-y-1.5`}>
-                        <div className="flex gap-1.5">
-                            <div className="w-1/3 h-10 rounded" style={{ backgroundColor: accentColor }} />
-                            <div className="flex-1 space-y-1">
-                                <div className="h-1.5 bg-slate-800 w-3/4" />
-                                <div className="h-0.5 bg-slate-200 w-full" />
-                            </div>
-                        </div>
-                    </div>
-                );
-
-            case 'striped':
-                return (
-                    <div className={`${baseClasses} p-2 space-y-1`}>
-                        <div className="h-3 w-full" style={{ backgroundColor: `${accentColor}20` }} />
-                        <div className="h-3 w-full bg-white" />
-                        <div className="h-3 w-full" style={{ backgroundColor: `${accentColor}20` }} />
-                    </div>
-                );
-
-            case 'bordered':
-                return (
-                    <div className={`${baseClasses} border-4 p-2`} style={{ borderColor: accentColor }}>
-                        <div className="space-y-2">
-                            <div className="h-2 bg-slate-800 w-2/3" />
-                            <div className="space-y-1">
-                                <div className="h-0.5 bg-slate-200 w-full" />
-                                <div className="h-0.5 bg-slate-200 w-3/4" />
-                            </div>
-                        </div>
-                    </div>
-                );
-
-            case 'compact':
-                return (
-                    <div className={`${baseClasses} p-2 text-[6px] space-y-1.5`}>
-                        <div className="h-2 bg-slate-800 w-1/2" />
-                        <div className="space-y-0.5">
-                            <div className="h-0.5 bg-slate-200 w-full" />
-                            <div className="h-0.5 bg-slate-200 w-full" />
-                            <div className="h-0.5 bg-slate-200 w-3/4" />
-                            <div className="h-0.5 bg-slate-200 w-full" />
-                        </div>
-                        <div className="flex gap-1">
-                            <div className="h-3 w-1/4 rounded" style={{ backgroundColor: `${accentColor}30` }} />
-                            <div className="h-3 w-1/4 rounded" style={{ backgroundColor: `${accentColor}30` }} />
-                        </div>
-                    </div>
-                );
-
+            // Add more template thumbnails as needed...
             default:
                 return (
                     <div className={`${baseClasses} flex items-center justify-center p-3`}>
@@ -411,6 +157,30 @@ export function TabTemplates() {
         }
     };
 
+    if (loading) {
+        return (
+            <div>
+                <header className="mb-8">
+                    <h2 className="text-xl font-display font-bold text-slate-800">Choose a Layout</h2>
+                    <p className="text-slate-400 text-xs mt-1 font-medium">
+                        Select a design that matches your industry and seniority level.
+                    </p>
+                </header>
+                <div className="grid grid-cols-2 gap-3 sm:gap-6">
+                    {[...Array(6)].map((_, i) => (
+                        <div key={i} className="bg-white border-2 border-slate-100 p-2 rounded-2xl animate-pulse">
+                            <div className="aspect-[3/4] bg-slate-200 rounded-xl mb-3" />
+                            <div className="px-2 pb-2">
+                                <div className="h-4 bg-slate-200 rounded w-3/4 mb-2" />
+                                <div className="h-3 bg-slate-100 rounded w-1/2" />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div>
             <header className="mb-8">
@@ -418,20 +188,37 @@ export function TabTemplates() {
                 <p className="text-slate-400 text-xs mt-1 font-medium">
                     Select a design that matches your industry and seniority level.
                 </p>
+                {error && (
+                    <p className="text-amber-600 text-xs mt-2 font-medium">
+                        <i className="fa-solid fa-triangle-exclamation mr-1" />
+                        {error}
+                    </p>
+                )}
             </header>
 
             <div className="grid grid-cols-2 gap-3 sm:gap-6">
                 {templates.map((template) => (
                     <div
                         key={template.id}
-                        onClick={() => setTemplate(template.id)}
+                        onClick={() => handleTemplateSelect(template)}
                         className={cn(
                             'group relative bg-white border-2 p-2 rounded-2xl cursor-pointer hover:border-indigo-200 hover:shadow-lg transition-all',
                             selectedTemplate === template.id
                                 ? 'border-indigo-600 shadow-[0_0_0_2px_#4f46e5]'
-                                : 'border-slate-100'
+                                : 'border-slate-100',
+                            template.is_premium && !hasPremiumAccess && 'opacity-75'
                         )}
                     >
+                        {/* Premium Badge */}
+                        {template.is_premium && (
+                            <div className="absolute top-4 right-4 z-10">
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-[9px] font-bold bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-lg">
+                                    <i className="fa-solid fa-crown mr-1" />
+                                    PRO
+                                </span>
+                            </div>
+                        )}
+
                         {/* Template Preview */}
                         {renderThumbnail(template.id)}
 
@@ -446,10 +233,89 @@ export function TabTemplates() {
                             <p className="text-[9px] text-slate-400 mt-0.5 uppercase tracking-wider font-bold">
                                 {template.category}
                             </p>
+
+                            {/* Complexity Badge */}
+                            <div className="mt-2">
+                                <span className={cn(
+                                    "inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wide",
+                                    template.complexity_level === 'beginner' && 'bg-green-100 text-green-700',
+                                    template.complexity_level === 'intermediate' && 'bg-blue-100 text-blue-700',
+                                    template.complexity_level === 'advanced' && 'bg-purple-100 text-purple-700'
+                                )}>
+                                    {template.complexity_level}
+                                </span>
+                            </div>
                         </div>
+
+                        {/* Premium Lock Overlay */}
+                        {template.is_premium && !hasPremiumAccess && (
+                            <div className="absolute inset-0 bg-slate-900/5 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="bg-white rounded-full p-3 shadow-lg">
+                                    <i className="fa-solid fa-lock text-slate-600 text-lg" />
+                                </div>
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>
         </div>
     );
+}
+
+// Fallback templates in case API fails
+function getFallbackTemplates(): TemplateData[] {
+    return [
+        {
+            id: 'modern',
+            name: 'Modern Executive',
+            category: 'Best for Tech & SaaS',
+            description: 'A sleek, modern template perfect for tech professionals',
+            preview_image: null,
+            thumbnail_image: null,
+            supported_colors: ['indigo', 'emerald', 'rose', 'slate', 'amber', 'violet'],
+            features: ['Clean Layout', 'ATS-Friendly', 'Modern Design'],
+            is_premium: false,
+            best_for: 'Software Engineers, Product Managers',
+            complexity_level: 'intermediate',
+        },
+        {
+            id: 'creative',
+            name: 'Creative Sidebar',
+            category: 'Design & Marketing',
+            description: 'Stand out with this creative sidebar design',
+            preview_image: null,
+            thumbnail_image: null,
+            supported_colors: ['indigo', 'emerald', 'rose', 'slate', 'amber', 'violet'],
+            features: ['Sidebar Layout', 'Visual Appeal'],
+            is_premium: false,
+            best_for: 'Designers, Marketers',
+            complexity_level: 'intermediate',
+        },
+        {
+            id: 'academic',
+            name: 'Academic Elite',
+            category: 'Formal & Corporate',
+            description: 'Traditional and formal template',
+            preview_image: null,
+            thumbnail_image: null,
+            supported_colors: ['indigo', 'emerald', 'rose', 'slate', 'amber', 'violet'],
+            features: ['Formal Design', 'Traditional Layout'],
+            is_premium: false,
+            best_for: 'Professors, Researchers',
+            complexity_level: 'beginner',
+        },
+        {
+            id: 'minimal',
+            name: 'Minimalist Bold',
+            category: 'Clean & Functional',
+            description: 'Less is more',
+            preview_image: null,
+            thumbnail_image: null,
+            supported_colors: ['indigo', 'emerald', 'rose', 'slate', 'amber', 'violet'],
+            features: ['Minimalist', 'Clean Lines'],
+            is_premium: false,
+            best_for: 'All Industries',
+            complexity_level: 'beginner',
+        },
+    ];
 }

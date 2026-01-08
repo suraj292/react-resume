@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PlanController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\BlogController;
+use App\Http\Controllers\Api\TemplateController;
 
 /*
 |--------------------------------------------------------------------------
@@ -110,4 +111,21 @@ Route::prefix('blog')->group(function () {
     Route::get('posts', [BlogController::class, 'index']);
     Route::get('posts/{slug}', [BlogController::class, 'show']);
     Route::get('categories', [BlogController::class, 'categories']);
+});
+
+// Template Routes (Public)
+Route::prefix('templates')->group(function () {
+    Route::get('/', [TemplateController::class, 'index']);
+    Route::get('/categories', [TemplateController::class, 'categories']);
+    Route::get('/{templateId}', [TemplateController::class, 'show']);
+    
+    // Analytics tracking (public - can be called without auth)
+    Route::post('/analytics/select', [TemplateController::class, 'trackSelection']);
+    Route::post('/analytics/preview', [TemplateController::class, 'trackPreview']);
+    
+    // Analytics viewing (protected - admin only)
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/analytics/stats', [TemplateController::class, 'analytics']);
+        Route::get('/analytics/stats/{templateId}', [TemplateController::class, 'analytics']);
+    });
 });

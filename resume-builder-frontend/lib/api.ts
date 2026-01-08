@@ -193,6 +193,56 @@ export const blogAPI = {
 };
 
 // ============================================================================
+// Template API
+// ============================================================================
+
+export interface TemplateData {
+    id: string;
+    name: string;
+    category: string;
+    description: string;
+    preview_image: string | null;
+    thumbnail_image: string | null;
+    supported_colors: string[];
+    features: string[];
+    is_premium: boolean;
+    best_for: string;
+    complexity_level: 'beginner' | 'intermediate' | 'advanced';
+}
+
+export const templateAPI = {
+    /**
+     * Get all active templates
+     */
+    getAll: (params?: { premium?: boolean; complexity?: string }) =>
+        api.get<{ success: boolean; data: TemplateData[] }>('/templates', { params }),
+
+    /**
+     * Get a specific template by ID
+     */
+    getById: (templateId: string) =>
+        api.get<{ success: boolean; data: TemplateData }>(`/templates/${templateId}`),
+
+    /**
+     * Get all template categories
+     */
+    getCategories: () =>
+        api.get<{ success: boolean; data: string[] }>('/templates/categories'),
+
+    /**
+     * Track template selection (analytics)
+     */
+    trackSelection: (templateId: string) =>
+        api.post('/templates/analytics/select', { template_id: templateId }),
+
+    /**
+     * Track template preview view
+     */
+    trackPreview: (templateId: string) =>
+        api.post('/templates/analytics/preview', { template_id: templateId }),
+};
+
+// ============================================================================
 // Social Auth URLs
 // ============================================================================
 
