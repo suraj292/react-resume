@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\PlanController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\BlogController;
 use App\Http\Controllers\Api\TemplateController;
+use App\Http\Controllers\Api\UserProfileController;
 
 /*
 |--------------------------------------------------------------------------
@@ -94,6 +95,14 @@ Route::middleware('auth:sanctum')->prefix('plan')->group(function () {
     Route::get('/current', [PlanController::class, 'getCurrentPlan']);
     Route::get('/check/{feature}', [PlanController::class, 'checkFeatureAccess']);
     Route::get('/usage', [PlanController::class, 'getUsageStats']);
+});
+
+// User Profile Management
+Route::middleware('auth:sanctum')->prefix('user')->group(function () {
+    Route::get('/profile', [UserProfileController::class, 'show']);
+    Route::put('/profile', [UserProfileController::class, 'update']);
+    Route::post('/avatar', [UserProfileController::class, 'updateAvatar']);
+    Route::put('/password', [UserProfileController::class, 'updatePassword']);
 });
 
 // User Stats (Protected)

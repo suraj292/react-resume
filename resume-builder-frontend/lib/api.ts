@@ -193,6 +193,53 @@ export const blogAPI = {
 };
 
 // ============================================================================
+// User Profile API
+// ============================================================================
+
+export interface UserProfile {
+    id: number;
+    name: string;
+    email: string;
+    job_title?: string;
+    phone?: string;
+    location?: string;
+    avatar?: string;
+}
+
+export const userAPI = {
+    /**
+     * Get current user's profile
+     */
+    getProfile: () =>
+        api.get<{ success: boolean; data: UserProfile }>('/user/profile'),
+
+    /**
+     * Update current user's profile
+     */
+    updateProfile: (data: Partial<UserProfile>) =>
+        api.put<{ success: boolean; data: UserProfile }>('/user/profile', data),
+
+    /**
+     * Update user avatar
+     */
+    updateAvatar: (file: File) => {
+        const formData = new FormData();
+        formData.append('avatar', file);
+        return api.post<{ success: boolean; data: { avatar: string } }>('/user/avatar', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+    },
+
+    /**
+     * Update user password
+     */
+    updatePassword: (data: { current_password: string; password: string; password_confirmation: string }) =>
+        api.put<{ success: boolean; message: string }>('/user/password', data),
+};
+
+// ============================================================================
 // Template API
 // ============================================================================
 

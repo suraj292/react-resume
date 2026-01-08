@@ -10,6 +10,7 @@ interface User {
     email_verified_at: string | null;
     avatar: string | null;
     provider: string | null;
+    password?: string | null;
     created_at?: string;
     updated_at?: string;
 }

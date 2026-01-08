@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { userAPI, UserProfile } from '@/lib/api';
 
 export default function ProfilePage() {
     const router = useRouter();
@@ -12,6 +13,31 @@ export default function ProfilePage() {
     const [isSaving, setIsSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
     const [showUserMenu, setShowUserMenu] = useState(false);
+    const [saveError, setSaveError] = useState<string | null>(null);
+
+    // Profile form state
+    const [profileData, setProfileData] = useState<Partial<UserProfile>>({
+        name: '',
+        email: '',
+        job_title: '',
+        phone: '',
+        location: '',
+    });
+    const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+
+    // Password change state
+    const [passwordData, setPasswordData] = useState({
+        current_password: '',
+        password: '',
+        password_confirmation: '',
+    });
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
+    const [passwordSuccess, setPasswordSuccess] = useState(false);
+    const [passwordError, setPasswordError] = useState<string | null>(null);
+    const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     useEffect(() => {
         if (!loading && !user) {
@@ -19,16 +45,110 @@ export default function ProfilePage() {
         }
     }, [user, loading, router]);
 
+    // Load user profile data
+    useEffect(() => {
+        const loadProfile = async () => {
+            if (!user) return;
+
+            try {
+                setIsLoadingProfile(true);
+                const response = await userAPI.getProfile();
+                if (response.data.success) {
+                    setProfileData(response.data.data);
+                }
+            } catch (error) {
+                console.error('Failed to load profile:', error);
+                // If API fails, use data from auth context
+                setProfileData({
+                    name: user.name || '',
+                    email: user.email || '',
+                    job_title: '',
+                    phone: '',
+                    location: '',
+                });
+            } finally {
+                setIsLoadingProfile(false);
+            }
+        };
+
+        loadProfile();
+    }, [user]);
+
+    const handleInputChange = (field: keyof UserProfile, value: string) => {
+        setProfileData(prev => ({
+            ...prev,
+            [field]: value
+        }));
+        // Clear any previous errors when user starts typing
+        setSaveError(null);
+    };
+
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSaving(true);
+        setSaveError(null);
+        setSaveSuccess(false);
 
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        try {
+            const response = await userAPI.updateProfile(profileData);
 
-        setIsSaving(false);
-        setSaveSuccess(true);
+            if (response.data.success) {
+                setSaveSuccess(true);
+                // Update will be reflected on next page load
+                setTimeout(() => setSaveSuccess(false), 3000);
+            }
+        } catch (error: any) {
+            console.error('Failed to save profile:', error);
+            setSaveError(
+                error.response?.data?.message ||
+                'Failed to save changes. Please try again.'
+            );
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
-        setTimeout(() => setSaveSuccess(false), 2000);
+    const handlePasswordChange = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsChangingPassword(true);
+        setPasswordError(null);
+        setPasswordSuccess(false);
+
+        // Client-side validation
+        if (passwordData.password !== passwordData.password_confirmation) {
+            setPasswordError('Passwords do not match.');
+            setIsChangingPassword(false);
+            return;
+        }
+
+        if (passwordData.password.length < 8) {
+            setPasswordError('Password must be at least 8 characters long.');
+            setIsChangingPassword(false);
+            return;
+        }
+
+        try {
+            const response = await userAPI.updatePassword(passwordData);
+
+            if (response.data.success) {
+                setPasswordSuccess(true);
+                // Clear form
+                setPasswordData({
+                    current_password: '',
+                    password: '',
+                    password_confirmation: '',
+                });
+                setTimeout(() => setPasswordSuccess(false), 5000);
+            }
+        } catch (error: any) {
+            console.error('Failed to update password:', error);
+            setPasswordError(
+                error.response?.data?.message ||
+                'Failed to update password. Please check your current password and try again.'
+            );
+        } finally {
+            setIsChangingPassword(false);
+        }
     };
 
     const handleLogout = async () => {
@@ -223,67 +343,96 @@ export default function ProfilePage() {
                                     <p className="text-sm text-slate-500">Update your personal details and contact information.</p>
                                 </div>
 
-                                <form onSubmit={handleSave} className="space-y-6 max-w-2xl">
-                                    <div className="grid md:grid-cols-2 gap-6">
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Full Name</label>
-                                            <input
-                                                type="text"
-                                                defaultValue="Alex Morgan"
-                                                className="form-input w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:border-indigo-500"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Job Title</label>
-                                            <input
-                                                type="text"
-                                                defaultValue="Product Designer"
-                                                className="form-input w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:border-indigo-500"
-                                            />
+                                {isLoadingProfile ? (
+                                    <div className="flex items-center justify-center py-12">
+                                        <div className="text-center">
+                                            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-3"></div>
+                                            <p className="text-sm text-slate-600">Loading profile...</p>
                                         </div>
                                     </div>
+                                ) : (
+                                    <form onSubmit={handleSave} className="space-y-6 max-w-2xl">
+                                        {saveError && (
+                                            <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+                                                <i className="fa-solid fa-circle-exclamation text-red-500 mt-0.5"></i>
+                                                <div className="text-sm text-red-800">
+                                                    <p className="font-bold mb-1">Error</p>
+                                                    <p>{saveError}</p>
+                                                </div>
+                                            </div>
+                                        )}
 
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Email Address</label>
-                                        <input
-                                            type="email"
-                                            defaultValue="alex.morgan@example.com"
-                                            className="form-input w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:border-indigo-500"
-                                        />
-                                    </div>
+                                        <div className="grid md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Full Name</label>
+                                                <input
+                                                    type="text"
+                                                    value={profileData.name || ''}
+                                                    onChange={(e) => handleInputChange('name', e.target.value)}
+                                                    className="form-input w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:border-indigo-500"
+                                                    required
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Job Title</label>
+                                                <input
+                                                    type="text"
+                                                    value={profileData.job_title || ''}
+                                                    onChange={(e) => handleInputChange('job_title', e.target.value)}
+                                                    placeholder="e.g. Product Designer"
+                                                    className="form-input w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:border-indigo-500"
+                                                />
+                                            </div>
+                                        </div>
 
-                                    <div className="grid md:grid-cols-2 gap-6">
                                         <div>
-                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Phone Number</label>
+                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Email Address</label>
                                             <input
-                                                type="tel"
-                                                defaultValue="+1 (555) 123-4567"
+                                                type="email"
+                                                value={profileData.email || ''}
+                                                onChange={(e) => handleInputChange('email', e.target.value)}
                                                 className="form-input w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:border-indigo-500"
+                                                required
                                             />
                                         </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Location</label>
-                                            <input
-                                                type="text"
-                                                defaultValue="San Francisco, CA"
-                                                className="form-input w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:border-indigo-500"
-                                            />
-                                        </div>
-                                    </div>
 
-                                    <div className="pt-4">
-                                        <button
-                                            type="submit"
-                                            disabled={isSaving || saveSuccess}
-                                            className={`px-6 py-2.5 text-white text-sm font-bold rounded-xl shadow-lg transition-all transform active:scale-95 flex items-center gap-2 ${saveSuccess ? 'bg-green-600' : 'bg-indigo-600 hover:bg-indigo-500'
-                                                }`}
-                                        >
-                                            {isSaving && <i className="fa-solid fa-circle-notch fa-spin"></i>}
-                                            {saveSuccess && <i className="fa-solid fa-check"></i>}
-                                            <span>{isSaving ? 'Saving...' : saveSuccess ? 'Saved!' : 'Save Changes'}</span>
-                                        </button>
-                                    </div>
-                                </form>
+                                        <div className="grid md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Phone Number</label>
+                                                <input
+                                                    type="tel"
+                                                    value={profileData.phone || ''}
+                                                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                                                    placeholder="+1 (555) 123-4567"
+                                                    className="form-input w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:border-indigo-500"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Location</label>
+                                                <input
+                                                    type="text"
+                                                    value={profileData.location || ''}
+                                                    onChange={(e) => handleInputChange('location', e.target.value)}
+                                                    placeholder="e.g. San Francisco, CA"
+                                                    className="form-input w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:border-indigo-500"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-4">
+                                            <button
+                                                type="submit"
+                                                disabled={isSaving || saveSuccess}
+                                                className={`px-6 py-2.5 text-white text-sm font-bold rounded-xl shadow-lg transition-all transform active:scale-95 flex items-center gap-2 ${saveSuccess ? 'bg-green-600' : 'bg-indigo-600 hover:bg-indigo-500'
+                                                    }`}
+                                            >
+                                                {isSaving && <i className="fa-solid fa-circle-notch fa-spin"></i>}
+                                                {saveSuccess && <i className="fa-solid fa-check"></i>}
+                                                <span>{isSaving ? 'Saving...' : saveSuccess ? 'Saved!' : 'Save Changes'}</span>
+                                            </button>
+                                        </div>
+                                    </form>
+                                )}
                             </div>
                         )}
 
@@ -295,55 +444,154 @@ export default function ProfilePage() {
                                     <p className="text-sm text-slate-500">Manage your password and security settings.</p>
                                 </div>
 
-                                <form onSubmit={handleSave} className="space-y-6 max-w-xl">
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Current Password</label>
-                                        <input
-                                            type="password"
-                                            placeholder="••••••••"
-                                            className="form-input w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:border-indigo-500"
-                                        />
+                                {/* OAuth User Info */}
+                                {user.provider && (
+                                    <div className="mb-6 bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
+                                        <i className="fa-brands fa-google text-blue-600 text-xl mt-0.5"></i>
+                                        <div className="text-sm text-blue-800">
+                                            <p className="font-bold mb-1">Google Account Connected</p>
+                                            <p>You're currently signed in with Google. {user.password ? 'You can update your password below.' : 'Set a password below to enable email/password login as an alternative.'}</p>
+                                        </div>
                                     </div>
+                                )}
+
+                                <form onSubmit={handlePasswordChange} className="space-y-6 max-w-xl">
+                                    {passwordError && (
+                                        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+                                            <i className="fa-solid fa-circle-exclamation text-red-500 mt-0.5"></i>
+                                            <div className="text-sm text-red-800">
+                                                <p className="font-bold mb-1">Error</p>
+                                                <p>{passwordError}</p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {passwordSuccess && (
+                                        <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start gap-3">
+                                            <i className="fa-solid fa-circle-check text-green-500 mt-0.5"></i>
+                                            <div className="text-sm text-green-800">
+                                                <p className="font-bold mb-1">Success</p>
+                                                <p>{user.provider && !user.password ? 'Password set successfully! You can now login with your email and password.' : 'Your password has been updated successfully.'}</p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Only show current password field if user has a password set */}
+                                    {!user.provider && (
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Current Password</label>
+                                            <div className="relative">
+                                                <input
+                                                    type={showCurrentPassword ? "text" : "password"}
+                                                    value={passwordData.current_password}
+                                                    onChange={(e) => setPasswordData({ ...passwordData, current_password: e.target.value })}
+                                                    placeholder="••••••••"
+                                                    className="form-input w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:border-indigo-500"
+                                                    required
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                                >
+                                                    <i className={`fa-solid ${showCurrentPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     <div className="grid md:grid-cols-2 gap-6">
                                         <div>
-                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">New Password</label>
-                                            <input
-                                                type="password"
-                                                placeholder="New password"
-                                                className="form-input w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:border-indigo-500"
-                                            />
+                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
+                                                {user.provider && !user.password ? 'Set Password' : 'New Password'}
+                                            </label>
+                                            <div className="relative">
+                                                <input
+                                                    type={showNewPassword ? "text" : "password"}
+                                                    value={passwordData.password}
+                                                    onChange={(e) => setPasswordData({ ...passwordData, password: e.target.value })}
+                                                    placeholder="New password"
+                                                    className="form-input w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:border-indigo-500"
+                                                    required
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowNewPassword(!showNewPassword)}
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                                >
+                                                    <i className={`fa-solid ${showNewPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                                                </button>
+                                            </div>
                                         </div>
                                         <div>
                                             <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Confirm Password</label>
-                                            <input
-                                                type="password"
-                                                placeholder="Confirm password"
-                                                className="form-input w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:border-indigo-500"
-                                            />
+                                            <div className="relative">
+                                                <input
+                                                    type={showConfirmPassword ? "text" : "password"}
+                                                    value={passwordData.password_confirmation}
+                                                    onChange={(e) => setPasswordData({ ...passwordData, password_confirmation: e.target.value })}
+                                                    placeholder="Confirm password"
+                                                    className="form-input w-full px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 text-sm focus:outline-none focus:border-indigo-500"
+                                                    required
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                                >
+                                                    <i className={`fa-solid ${showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 flex items-start gap-3">
-                                        <i className="fa-solid fa-circle-info text-blue-500 mt-0.5"></i>
-                                        <div className="text-xs text-blue-800">
-                                            <p className="font-bold mb-1">Password Requirements</p>
-                                            <ul className="list-disc pl-4 space-y-1">
-                                                <li>Minimum 8 characters long</li>
-                                                <li>At least one uppercase character</li>
-                                                <li>At least one number or symbol</li>
-                                            </ul>
+                                    {passwordData.password && (
+                                        <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                                            <div className="flex items-start gap-3 mb-3">
+                                                <i className="fa-solid fa-circle-info text-blue-500 mt-0.5"></i>
+                                                <p className="text-xs font-bold text-blue-800">Password Strength</p>
+                                            </div>
+                                            <div className="space-y-2 text-xs text-blue-800 ml-6">
+                                                <div className="flex items-center gap-2">
+                                                    <i className={`fa-solid ${passwordData.password.length >= 8 ? 'fa-check text-green-600' : 'fa-xmark text-red-600'}`}></i>
+                                                    <span>Minimum 8 characters</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <i className={`fa-solid ${/[A-Z]/.test(passwordData.password) ? 'fa-check text-green-600' : 'fa-xmark text-red-600'}`}></i>
+                                                    <span>At least one uppercase letter</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <i className={`fa-solid ${/[0-9!@#$%^&*]/.test(passwordData.password) ? 'fa-check text-green-600' : 'fa-xmark text-red-600'}`}></i>
+                                                    <span>At least one number or symbol</span>
+                                                </div>
+                                                {passwordData.password_confirmation && (
+                                                    <div className="flex items-center gap-2">
+                                                        <i className={`fa-solid ${passwordData.password === passwordData.password_confirmation ? 'fa-check text-green-600' : 'fa-xmark text-red-600'}`}></i>
+                                                        <span>Passwords match</span>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
 
-                                    <div className="pt-4 flex items-center justify-between">
+                                    <div className="pt-4">
                                         <button
                                             type="submit"
-                                            className="px-6 py-2.5 bg-slate-900 text-white text-sm font-bold rounded-xl shadow-lg hover:bg-slate-800 transition-all transform active:scale-95"
+                                            disabled={isChangingPassword || passwordSuccess}
+                                            className={`px-6 py-2.5 text-white text-sm font-bold rounded-xl shadow-lg transition-all transform active:scale-95 flex items-center gap-2 ${passwordSuccess ? 'bg-green-600' : 'bg-slate-900 hover:bg-slate-800'
+                                                }`}
                                         >
-                                            Update Password
+                                            {isChangingPassword && <i className="fa-solid fa-circle-notch fa-spin"></i>}
+                                            {passwordSuccess && <i className="fa-solid fa-check"></i>}
+                                            <span>
+                                                {isChangingPassword
+                                                    ? (user.provider && !user.password ? 'Setting Password...' : 'Updating...')
+                                                    : passwordSuccess
+                                                        ? (user.provider && !user.password ? 'Password Set!' : 'Updated!')
+                                                        : (user.provider && !user.password ? 'Set Password' : 'Update Password')
+                                                }
+                                            </span>
                                         </button>
-                                        <span className="text-xs text-slate-400">Last updated: 3 months ago</span>
                                     </div>
                                 </form>
 
@@ -355,7 +603,10 @@ export default function ProfilePage() {
                                             <h4 className="text-sm font-bold text-slate-900">Delete Account</h4>
                                             <p className="text-xs text-slate-500">Permanently remove your account and all data.</p>
                                         </div>
-                                        <button className="px-4 py-2 bg-white border border-red-200 text-red-600 text-xs font-bold rounded-lg hover:bg-red-50 transition-colors">
+                                        <button
+                                            onClick={() => setShowDeleteConfirm(true)}
+                                            className="px-4 py-2 bg-white border border-red-200 text-red-600 text-xs font-bold rounded-lg hover:bg-red-50 transition-colors"
+                                        >
                                             Delete
                                         </button>
                                     </div>
