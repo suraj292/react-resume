@@ -11,6 +11,8 @@ interface User {
     avatar: string | null;
     provider: string | null;
     password?: string | null;
+    subscription_plan?: 'free' | 'pro' | 'premium' | null;
+    subscription_status?: 'active' | 'inactive' | 'cancelled' | 'expired' | null;
     created_at?: string;
     updated_at?: string;
 }

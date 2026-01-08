@@ -284,9 +284,22 @@ export default function ProfilePage() {
                             <h2 className="text-lg font-bold text-slate-900">{user.name}</h2>
                             <p className="text-xs text-slate-500 mb-4">{user.email}</p>
 
-                            <div className="inline-block px-3 py-1 bg-indigo-100 text-indigo-700 text-xs font-bold rounded-full mb-4">
-                                Pro Plan
-                            </div>
+                            {user.subscription_plan && user.subscription_status === 'active' ? (
+                                <div className={`inline-block px-3 py-1 text-xs font-bold rounded-full mb-4 ${user.subscription_plan === 'premium'
+                                    ? 'bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700'
+                                    : user.subscription_plan === 'pro'
+                                        ? 'bg-indigo-100 text-indigo-700'
+                                        : 'bg-slate-100 text-slate-700'
+                                    }`}>
+                                    {user.subscription_plan === 'premium' ? '✨ Premium Plan' :
+                                        user.subscription_plan === 'pro' ? '⚡ Pro Plan' :
+                                            '🆓 Free Plan'}
+                                </div>
+                            ) : (
+                                <div className="inline-block px-3 py-1 bg-slate-100 text-slate-700 text-xs font-bold rounded-full mb-4">
+                                    🆓 Free Plan
+                                </div>
+                            )}
 
                             <button
                                 onClick={handleLogout}
