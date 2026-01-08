@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { ROUTES } from '@/lib/routes';
 import { pricingAPI } from '@/lib/api';
+import { useSEO } from '@/hooks/useSEO';
 
 interface PricingFeature {
     text: string;
@@ -46,6 +47,12 @@ export default function PricingPage() {
     const [loading, setLoading] = useState(true);
     const [detectedCurrency, setDetectedCurrency] = useState<'USD' | 'INR' | 'EUR'>('INR');
     const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
+
+    // Dynamic SEO
+    useSEO(
+        'Pricing - AI Resume Builder',
+        'Choose the plan that fits your career goals. No hidden fees, cancel anytime.'
+    );
 
     useEffect(() => {
         const fetchPricingData = async () => {

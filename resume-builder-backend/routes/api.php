@@ -15,10 +15,10 @@ use App\Http\Controllers\Api\GeolocationController;
 use App\Http\Controllers\Api\UserStatsController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PlanController;
-use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\BlogController;
 use App\Http\Controllers\Api\TemplateController;
 use App\Http\Controllers\Api\UserProfileController;
+use App\Http\Controllers\Api\PageSeoController;
 
 /*
 |--------------------------------------------------------------------------
@@ -120,6 +120,12 @@ Route::prefix('blog')->group(function () {
     Route::get('posts', [BlogController::class, 'index']);
     Route::get('posts/{slug}', [BlogController::class, 'show']);
     Route::get('categories', [BlogController::class, 'categories']);
+});
+
+// SEO Routes (Public)
+Route::prefix('seo')->group(function () {
+    Route::get('/', [PageSeoController::class, 'index']);
+    Route::get('/{route}', [PageSeoController::class, 'show'])->where('route', '.*');
 });
 
 // Template Routes (Public)

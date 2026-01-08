@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import AuthRequiredModal from '@/components/auth-required-modal';
 import { analyzeResume } from '@/lib/ats-api';
 import { ROUTES } from '@/lib/routes';
+import { useSEO } from '@/hooks/useSEO';
 
 export default function ATSCheckerPage() {
     const [activeTab, setActiveTab] = useState('upload');
@@ -18,6 +19,12 @@ export default function ATSCheckerPage() {
     const [analysisData, setAnalysisData] = useState<any>(null);
     const { user, loading } = useAuth();
     const [showAuthModal, setShowAuthModal] = useState(false);
+
+    // Dynamic SEO
+    useSEO(
+        'ATS Checker - AI Resume Builder',
+        'Don\'t let a bot reject your application. Upload your resume to get an instant analysis of your'
+    );
 
     // Show auth modal if user is not logged in
     useEffect(() => {

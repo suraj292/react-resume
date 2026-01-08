@@ -240,6 +240,48 @@ export const userAPI = {
 };
 
 // ============================================================================
+// SEO API
+// ============================================================================
+
+export interface PageSeoData {
+    meta_title: string | null;
+    meta_description: string | null;
+    meta_keywords: string | null;
+    og_title: string | null;
+    og_description: string | null;
+    og_image: string | null;
+    og_type: string | null;
+    og_url: string | null;
+    twitter_card: string | null;
+    twitter_title: string | null;
+    twitter_description: string | null;
+    twitter_image: string | null;
+    twitter_site: string | null;
+    twitter_creator: string | null;
+    canonical_url: string | null;
+    robots: string | null;
+    language: string | null;
+    alternate_languages: Record<string, string> | null;
+    schema_markup: any | null;
+}
+
+export const seoAPI = {
+    /**
+     * Get SEO data for a specific route
+     */
+    getForRoute: (route: string) => {
+        const encodedRoute = route === '/' ? '%2F' : route.replace(/^\//, '');
+        return api.get<{ success: boolean; data: PageSeoData }>(`/seo/${encodedRoute}`);
+    },
+
+    /**
+     * Get all published pages with SEO data
+     */
+    getAllPages: () =>
+        api.get<{ success: boolean; data: Array<{ page_route: string; page_name: string; meta_title: string; meta_description: string }> }>('/seo'),
+};
+
+// ============================================================================
 // Template API
 // ============================================================================
 

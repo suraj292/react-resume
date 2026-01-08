@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useState, FormEvent } from 'react';
 import { ROUTES } from '@/lib/routes';
 import { contactAPI } from '@/lib/api';
+import { useSEO } from '@/hooks/useSEO';
 
 export default function ContactPage() {
     const [showSuccess, setShowSuccess] = useState(false);
@@ -16,6 +17,12 @@ export default function ContactPage() {
         subject: 'General Inquiry',
         message: '',
     });
+
+    // Dynamic SEO
+    useSEO(
+        'Contact Us - AI Resume Builder',
+        'Contact us for any questions or inquiries about our AI-powered resume builder. We are here to help you create the perfect resume and land your dream job.'
+    );
 
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();

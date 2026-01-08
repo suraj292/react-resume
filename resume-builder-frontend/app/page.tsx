@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import { ROUTES, isAuthenticated } from '@/lib/routes';
 import { useRouter } from 'next/navigation';
 import { pricingAPI } from '@/lib/api';
+import { useSEO } from '@/hooks/useSEO';
 
 interface PricingFeature {
     text: string;
@@ -38,6 +39,12 @@ export default function HomePage() {
     const [loading, setLoading] = useState(true);
     const [detectedCurrency, setDetectedCurrency] = useState<'USD' | 'INR' | 'EUR'>('INR');
     const router = useRouter();
+
+    // Dynamic SEO
+    useSEO(
+        'AI Resume Builder - Create Professional Resumes in Minutes',
+        'Build your perfect resume with our AI-powered resume builder. Choose from professional templates, get ATS-friendly formatting, and land your dream job faster.'
+    );
 
     useEffect(() => {
         const fetchPricingData = async () => {

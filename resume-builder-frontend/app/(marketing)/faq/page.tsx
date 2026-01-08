@@ -4,6 +4,7 @@ import MarketingLayout from '@/components/layout/marketing-layout';
 import Link from 'next/link';
 import { useState } from 'react';
 import { ROUTES } from '@/lib/routes';
+import { useSEO } from '@/hooks/useSEO';
 
 interface FAQItem {
     question: string;
@@ -48,6 +49,12 @@ export default function FAQPage() {
     const [activeIndex, setActiveIndex] = useState<number | null>(null);
     const [activeCategory, setActiveCategory] = useState<string>('all');
     const [searchQuery, setSearchQuery] = useState('');
+
+    // Dynamic SEO
+    useSEO(
+        'FAQ - AI Resume Builder',
+        'Frequently Asked Questions about our AI Resume Builder. Learn how to create an ATS-friendly resume and optimize your job applications.'
+    );
 
     const toggleAccordion = (index: number) => {
         setActiveIndex(activeIndex === index ? null : index);
@@ -102,8 +109,8 @@ export default function FAQPage() {
                     <button
                         onClick={() => filterByCategory('all')}
                         className={`px-5 py-2 rounded-full text-sm font-bold transition-all ${activeCategory === 'all'
-                                ? 'bg-slate-900 text-white shadow-md'
-                                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                            ? 'bg-slate-900 text-white shadow-md'
+                            : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
                             }`}
                     >
                         All Questions
@@ -111,8 +118,8 @@ export default function FAQPage() {
                     <button
                         onClick={() => filterByCategory('general')}
                         className={`px-5 py-2 rounded-full text-sm font-bold transition-all ${activeCategory === 'general'
-                                ? 'bg-slate-900 text-white shadow-md'
-                                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                            ? 'bg-slate-900 text-white shadow-md'
+                            : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
                             }`}
                     >
                         General
@@ -120,8 +127,8 @@ export default function FAQPage() {
                     <button
                         onClick={() => filterByCategory('ats')}
                         className={`px-5 py-2 rounded-full text-sm font-bold transition-all ${activeCategory === 'ats'
-                                ? 'bg-slate-900 text-white shadow-md'
-                                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                            ? 'bg-slate-900 text-white shadow-md'
+                            : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
                             }`}
                     >
                         ATS Checker
@@ -129,8 +136,8 @@ export default function FAQPage() {
                     <button
                         onClick={() => filterByCategory('pricing')}
                         className={`px-5 py-2 rounded-full text-sm font-bold transition-all ${activeCategory === 'pricing'
-                                ? 'bg-slate-900 text-white shadow-md'
-                                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                            ? 'bg-slate-900 text-white shadow-md'
+                            : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
                             }`}
                     >
                         Pricing
@@ -138,8 +145,8 @@ export default function FAQPage() {
                     <button
                         onClick={() => filterByCategory('security')}
                         className={`px-5 py-2 rounded-full text-sm font-bold transition-all ${activeCategory === 'security'
-                                ? 'bg-slate-900 text-white shadow-md'
-                                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                            ? 'bg-slate-900 text-white shadow-md'
+                            : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
                             }`}
                     >
                         Security

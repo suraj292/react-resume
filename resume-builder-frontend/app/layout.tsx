@@ -2,10 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 
-export const metadata: Metadata = {
-  title: "AI Resume Builder",
-  description: "Build ATS-optimized resumes with AI assistance",
-};
+// Metadata is now handled dynamically by each page using the useSEO hook
 
 export default function RootLayout({
   children,
@@ -15,6 +12,23 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/* Default meta tags - will be updated dynamically by useSEO hook */}
+        <title>AI Resume Builder</title>
+        <meta name="description" content="Build ATS-optimized resumes with AI assistance" />
+        <meta name="keywords" content="resume builder, AI resume, ATS resume" />
+
+        {/* Open Graph */}
+        <meta property="og:title" content="AI Resume Builder" />
+        <meta property="og:description" content="Build ATS-optimized resumes with AI assistance" />
+        <meta property="og:type" content="website" />
+
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="AI Resume Builder" />
+        <meta name="twitter:description" content="Build ATS-optimized resumes with AI assistance" />
+        <meta name="twitter:site" content="@resumebuilder" />
+
+        {/* Fonts */}
         <link
           rel="preconnect"
           href="https://fonts.googleapis.com"
