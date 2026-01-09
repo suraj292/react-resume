@@ -403,7 +403,7 @@ export default function HomePage() {
                             <div className="flex text-yellow-400 mb-4 text-sm">
                                 {[1, 2, 3, 4, 5].map(i => <i key={i} className="fa-solid fa-star"></i>)}
                             </div>
-                            <p className="text-slate-600 mb-6">&quot;I applied to 50 jobs with my old resume and heard nothing. After using ResumeAI, I got 3 interviews in a week!&quot;</p>
+                            <p className="text-slate-600 mb-6">&quot;I applied to 50 jobs with my old resume and heard nothing. After using ResumeBP, I got 3 interviews in a week!&quot;</p>
                             <div className="font-bold text-sm text-slate-900 flex items-center gap-2">
                                 <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs">SJ</div>
                                 Sarah Jenkins

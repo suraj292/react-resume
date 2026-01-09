@@ -775,7 +775,7 @@ export default function ProfilePage() {
             {/* Footer */}
             <footer className="bg-slate-950 text-slate-400 py-8 border-t border-slate-800 text-sm mt-auto">
                 <div className="container mx-auto px-6 text-center">
-                    <p>&copy; 2023 ResumeAI. All rights reserved.</p>
+                    <p>&copy; 2023 ResumeBP. All rights reserved.</p>
                 </div>
             </footer>
         </div>

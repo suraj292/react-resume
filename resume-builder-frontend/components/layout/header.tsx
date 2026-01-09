@@ -49,7 +49,7 @@ export default function Header() {
                         <i className="fa-solid fa-layer-group"></i>
                     </div>
                     <span className="text-xl font-display font-bold text-slate-900 tracking-tight">
-                        Resume<span className="text-indigo-600">AI</span>
+                        Resume<span className="text-indigo-600">BP</span>
                     </span>
                 </Link>
 

@@ -156,7 +156,7 @@ export default function LoginPage() {
                             <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur-md flex items-center justify-center text-white text-sm border border-white/20 group-hover:scale-105 transition-transform">
                                 <i className="fa-solid fa-layer-group"></i>
                             </div>
-                            <span className="font-bold text-lg tracking-tight">Resume<span className="text-indigo-200">AI</span></span>
+                            <span className="font-bold text-lg tracking-tight">Resume<span className="text-indigo-200">BP</span></span>
                         </Link>
 
                         <h1 className="text-3xl font-display font-bold mb-4 leading-tight">Build Smarter Resumes with AI</h1>

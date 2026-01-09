@@ -182,7 +182,7 @@ export function Navbar({ isSaving, isDirty }: NavbarProps) {
                         R
                     </div>
                     <span className="font-display font-bold text-lg tracking-tight hidden md:block">
-                        ResumeAI
+                        ResumeBP
                     </span>
                 </Link>
 

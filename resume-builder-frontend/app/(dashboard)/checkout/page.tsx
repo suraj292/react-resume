@@ -159,7 +159,7 @@ export default function CheckoutPage() {
                 key: orderData.key_id,
                 amount: orderData.amount,
                 currency: orderData.currency,
-                name: 'ResumeAI',
+                name: 'ResumeBP',
                 description: `${planName} Plan - ${period === 'yearly' ? 'Yearly' : 'Monthly'}`,
                 order_id: orderData.order_id,
                 handler: async function (response: any) {
@@ -482,7 +482,7 @@ export default function CheckoutPage() {
             {/* Footer */}
             <footer className="bg-slate-950 text-slate-400 py-8 border-t border-slate-800 text-sm mt-auto">
                 <div className="container mx-auto px-6 text-center flex flex-col md:flex-row justify-between items-center gap-4">
-                    <p>&copy; 2024 ResumeAI. All rights reserved.</p>
+                    <p>&copy; 2024 ResumeBP. All rights reserved.</p>
                     <div className="flex gap-4 text-xl opacity-50">
                         <i className="fa-brands fa-cc-visa"></i>
                         <i className="fa-brands fa-cc-mastercard"></i>

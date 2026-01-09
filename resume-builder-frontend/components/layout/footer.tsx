@@ -8,7 +8,7 @@ export default function Footer() {
                 <div className="flex flex-col md:flex-row justify-between items-center gap-6">
                     <div className="text-center md:text-left">
                         <h3 className="text-xl font-display font-bold text-white mb-2">
-                            Resume<span className="text-indigo-400">AI</span>
+                            Resume<span className="text-indigo-400">BP</span>
                         </h3>
                         <p className="text-sm text-slate-400">Build ATS-friendly resumes in minutes</p>
                     </div>
@@ -28,7 +28,7 @@ export default function Footer() {
                     </div>
                 </div>
                 <div className="mt-8 pt-8 border-t border-slate-800 text-center text-sm text-slate-500">
-                    © {new Date().getFullYear()} ResumeAI. All rights reserved.
+                    © {new Date().getFullYear()} ResumeBP. All rights reserved.
                 </div>
             </div>
         </footer>
