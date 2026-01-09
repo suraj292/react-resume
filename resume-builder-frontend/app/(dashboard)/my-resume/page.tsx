@@ -163,10 +163,12 @@ export default function MyResumePage() {
                     </Link>
 
                     <nav className="hidden md:flex items-center gap-8">
-                        <Link href="/builder" className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">Dashboard</Link>
-                        <Link href="/my-resume" className="text-sm font-medium text-indigo-600 bg-indigo-50 px-3 py-1 rounded-md">My Resumes</Link>
-                        <Link href="/ats-checker" className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">ATS Check</Link>
-                        <Link href="/templates" className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">Templates</Link>
+                        <Link href="/" className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">Home</Link>
+                        <Link href="/builder" className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">Resume Builder</Link>
+                        <Link href="/ats-checker" className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">ATS Checker</Link>
+                        <Link href="/pricing" className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">Pricing</Link>
+                        <Link href="/blog" className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">Blog</Link>
+                        <Link href="/contact" className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">Contact</Link>
                     </nav>
 
                     <div className="flex items-center gap-4">
