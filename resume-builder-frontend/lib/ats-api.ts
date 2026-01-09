@@ -13,6 +13,10 @@ interface ATSAnalysisResponse {
         missing: number;
         found_list: string[];
         missing_list: string[];
+        match_percentage?: number | null;
+        strength?: string | null;
+        missing_critical?: string[];
+        missing_preferred?: string[];
     };
     formatting: {
         issues: number;
@@ -30,6 +34,7 @@ interface ATSAnalysisResponse {
         reading_level: string;
     };
     recommendations: string[];
+    has_job_description: boolean;
 }
 
 export async function analyzeResume(

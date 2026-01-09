@@ -30,7 +30,7 @@ interface UIStore {
 export const useUIStore = create<UIStore>()(
     devtools((set) => ({
         // Initial State
-        activeTab: 'colors',
+        activeTab: 'upload',
         isMobileSidebarOpen: false,
         isMobilePreviewOpen: false,
         selectedTemplate: 'modern',

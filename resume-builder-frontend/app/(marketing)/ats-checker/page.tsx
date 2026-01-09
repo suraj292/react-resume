@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import MarketingLayout from '@/components/layout/marketing-layout';
 import { useAuth } from '@/contexts/AuthContext';
 import AuthRequiredModal from '@/components/auth-required-modal';
+import PlanLimitModal from '@/components/plan-limit-modal';
 import { analyzeResume } from '@/lib/ats-api';
 import { ROUTES } from '@/lib/routes';
 import { useSEO } from '@/hooks/useSEO';
@@ -19,6 +20,8 @@ export default function ATSCheckerPage() {
     const [analysisData, setAnalysisData] = useState<any>(null);
     const { user, loading } = useAuth();
     const [showAuthModal, setShowAuthModal] = useState(false);
+    const [showLimitModal, setShowLimitModal] = useState(false);
+    const [limitData, setLimitData] = useState<any>(null);
 
     // Dynamic SEO
     useSEO(
@@ -110,18 +113,25 @@ export default function ATSCheckerPage() {
             setAnalysisData(result);
             setIsLoading(false);
             setShowResults(true);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Analysis failed:', error);
-            setLoadingText('Analysis failed. Please try again.');
-            setTimeout(() => {
+
+            // Check if it's a 403 plan limit error
+            if (error.response?.status === 403 && error.response?.data?.upgrade_required) {
+                setLimitData(error.response.data);
                 setIsLoading(false);
-            }, 2000);
+                setShowLimitModal(true);
+            } else {
+                setLoadingText('Analysis failed. Please try again.');
+                setTimeout(() => {
+                    setIsLoading(false);
+                }, 2000);
+            }
         }
     };
 
-    const targetScore = 72;
     const circumference = 42 * 2 * Math.PI;
-    const offset = circumference - (targetScore / 100) * circumference;
+    const offset = circumference - (score / 100) * circumference;
 
     return (
         <MarketingLayout>
@@ -383,14 +393,28 @@ export default function ATSCheckerPage() {
                                     <i className="fa-solid fa-circle-exclamation"></i> Top Priorities to Fix
                                 </h4>
                                 <ul className="space-y-3">
-                                    {analysisData?.recommendations?.slice(0, 3).map((rec: string, index: number) => (
-                                        <li key={index} className="flex items-start gap-3 bg-white p-3 rounded-lg border border-red-100 shadow-sm">
-                                            <i className="fa-solid fa-xmark text-red-500 mt-1"></i>
-                                            <div>
-                                                <span className="text-sm text-slate-800">{rec}</span>
-                                            </div>
-                                        </li>
-                                    ))}
+                                    {analysisData?.recommendations?.slice(0, 3).map((rec: string, index: number) => {
+                                        const isCritical = rec.startsWith('CRITICAL:');
+                                        const isFix = rec.startsWith('FIX:');
+                                        const displayText = rec.replace(/^(CRITICAL:|FIX:)\s*/, '');
+
+                                        return (
+                                            <li key={index} className={`flex items-start gap-3 p-3 rounded-lg shadow-sm ${isCritical ? 'bg-red-100 border-2 border-red-300' :
+                                                isFix ? 'bg-orange-50 border border-orange-200' :
+                                                    'bg-white border border-red-100'
+                                                }`}>
+                                                <i className={`fa-solid mt-1 ${isCritical ? 'fa-exclamation-triangle text-red-600' :
+                                                    isFix ? 'fa-wrench text-orange-600' :
+                                                        'fa-lightbulb text-yellow-600'
+                                                    }`}></i>
+                                                <div className="flex-1">
+                                                    {isCritical && <span className="text-xs font-bold text-red-600 uppercase block mb-1">Critical</span>}
+                                                    {isFix && <span className="text-xs font-bold text-orange-600 uppercase block mb-1">Fix Required</span>}
+                                                    <span className="text-sm text-slate-800">{displayText}</span>
+                                                </div>
+                                            </li>
+                                        );
+                                    })}
                                     {(!analysisData?.recommendations || analysisData.recommendations.length === 0) && (
                                         <li className="flex items-start gap-3 bg-green-50 p-3 rounded-lg border border-green-100 shadow-sm">
                                             <i className="fa-solid fa-check text-green-500 mt-1"></i>
@@ -603,6 +627,15 @@ export default function ATSCheckerPage() {
 
             {/* Auth Required Modal */}
             {showAuthModal && <AuthRequiredModal onClose={() => setShowAuthModal(false)} />}
+
+            {/* Plan Limit Modal */}
+            {showLimitModal && limitData && (
+                <PlanLimitModal
+                    isOpen={showLimitModal}
+                    onClose={() => setShowLimitModal(false)}
+                    limitData={limitData}
+                />
+            )}
         </MarketingLayout>
     );
 }
