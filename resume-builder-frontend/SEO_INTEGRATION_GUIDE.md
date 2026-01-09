@@ -123,7 +123,7 @@ Based on `/lib/routes.ts`, here are all the static pages that need SEO integrati
 ### Dashboard Pages (Optional)
 - ⏳ **Builder** (`/builder`)
 - ⏳ **Profile** (`/profile`)
-- ⏳ **My Resumes** (`/my-resumes`)
+- ⏳ **My Resumes** (`/my-resume`)
 - ⏳ **Checkout** (`/checkout`)
 
 ## Quick Implementation Template

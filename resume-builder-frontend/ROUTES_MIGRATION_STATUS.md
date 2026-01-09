@@ -36,7 +36,7 @@ ROUTES = {
 
 ### High Priority (Frequently Used)
 1. `/components/resume-builder/navbar.tsx`
-   - Routes: `/`, `/profile`, `/my-resumes`, `/login`
+   - Routes: `/`, `/profile`, `/my-resume`, `/login`
    
 2. `/components/auth-required-modal.tsx`
    - Routes: `/login`, `/login?tab=register`
@@ -128,7 +128,7 @@ href="/login"     → href={ROUTES.LOGIN}
 href="/builder"   → href={ROUTES.BUILDER}
 href="/pricing"   → href={ROUTES.PRICING}
 href="/profile"   → href={ROUTES.PROFILE}
-href="/my-resumes" → href={ROUTES.MY_RESUMES}
+href="/my-resume" → href={ROUTES.MY_RESUMES}
 href="/ats-checker" → href={ROUTES.ATS_CHECKER}
 href="/contact"   → href={ROUTES.CONTACT}
 href="/about"     → href={ROUTES.ABOUT}

@@ -58,7 +58,7 @@ All public routes are allowed for search engine crawlers:
 Protected routes are blocked from indexing:
 - `/builder` - Resume builder (requires authentication)
 - `/profile` - User profile
-- `/my-resumes` - User's saved resumes
+- `/my-resume` - User's saved resumes
 - `/checkout` - Checkout page
 - `/api/*` - API endpoints
 - `/_next/*` - Next.js internal files

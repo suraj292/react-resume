@@ -15,7 +15,7 @@ export default function robots(): MetadataRoute.Robots {
                 disallow: [
                     '/builder',      // Protected: Resume builder (requires auth)
                     '/profile',      // Protected: User profile
-                    '/my-resumes',   // Protected: User's resumes
+                    '/my-resume',   // Protected: User's resumes
                     '/checkout',     // Protected: Checkout page
                     '/api/',         // API routes
                     '/_next/',       // Next.js internal files

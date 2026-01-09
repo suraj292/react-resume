@@ -142,7 +142,7 @@ NAVIGATION_GROUPS.userMenu.map(item => (
 ### Dashboard Routes
 - `ROUTES.BUILDER` - `/builder`
 - `ROUTES.PROFILE` - `/profile`
-- `ROUTES.MY_RESUMES` - `/my-resumes`
+- `ROUTES.MY_RESUMES` - `/my-resume`
 - `ROUTES.CHECKOUT` - `/checkout`
 
 ## Migration Guide

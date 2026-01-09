@@ -32,7 +32,7 @@ export const ROUTES = {
     // Dashboard Routes (Protected)
     BUILDER: '/builder',
     PROFILE: '/profile',
-    MY_RESUMES: '/my-resumes',
+    MY_RESUMES: '/my-resume',
     CHECKOUT: '/checkout',
 
     // Dynamic Routes (functions that return paths)

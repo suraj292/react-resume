@@ -245,7 +245,7 @@ export function Navbar({ isSaving, isDirty }: NavbarProps) {
                                     Profile
                                 </Link>
                                 <Link
-                                    href="/my-resumes"
+                                    href="/my-resume"
                                     className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors text-sm text-slate-700"
                                     onClick={() => setShowUserMenu(false)}
                                 >

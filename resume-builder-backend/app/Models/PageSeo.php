@@ -58,7 +58,7 @@ class PageSeo extends Model
             '/terms' => 'Terms of Service',
             '/builder' => 'Resume Builder',
             '/profile' => 'Profile',
-            '/my-resumes' => 'My Resumes',
+            '/my-resume' => 'My Resumes',
             '/checkout' => 'Checkout',
         ];
     }
