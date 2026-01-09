@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import AuthRequiredModal from '@/components/auth-required-modal';
 import PlanLimitModal from '@/components/plan-limit-modal';
 import { analyzeResume } from '@/lib/ats-api';
+import { atsCache } from '@/lib/ats-cache';
 import { ROUTES } from '@/lib/routes';
 import { useSEO } from '@/hooks/useSEO';
 
@@ -41,19 +42,47 @@ export default function ATSCheckerPage() {
         const storedData = localStorage.getItem('ats-resume-data');
         if (storedData) {
             try {
-                const { text, timestamp } = JSON.parse(storedData);
+                const { text, timestamp, cached } = JSON.parse(storedData);
                 // Check if data is less than 5 minutes old
                 if (Date.now() - timestamp < 5 * 60 * 1000) {
                     setResumeText(text);
                     setActiveTab('paste');
                     localStorage.removeItem('ats-resume-data');
-                    // Auto-start analysis after a brief delay
+
+                    // If coming from builder with cached data, use it directly
+                    if (cached) {
+                        const cachedAnalysis = atsCache.getCachedAnalysis();
+                        if (cachedAnalysis) {
+                            // Use cached data instantly - no API call!
+                            setAnalysisData(cachedAnalysis);
+                            setShowResults(true);
+                            return;
+                        }
+                    }
+
+                    // Otherwise, auto-start analysis
                     setTimeout(() => {
                         startAnalysis(text);
                     }, 500);
                 }
             } catch (e) {
                 console.error('Failed to parse stored resume data', e);
+            }
+        }
+    }, []);
+
+    // Check for cached data on page load (show if available)
+    useEffect(() => {
+        // Only check if we don't have stored resume data (to avoid conflict)
+        const storedData = localStorage.getItem('ats-resume-data');
+        if (!storedData) {
+            const cachedData = atsCache.getCached();
+            if (cachedData) {
+                // Show cached analysis automatically
+                setResumeText(cachedData.resumeText);
+                setAnalysisData(cachedData.analysisResult);
+                setShowResults(true);
+                setActiveTab('paste');
             }
         }
     }, []);
@@ -296,7 +325,17 @@ export default function ATSCheckerPage() {
                                 <i className="fa-solid fa-download mr-2"></i> Download PDF
                             </button>
                             <button
-                                onClick={() => window.location.reload()}
+                                onClick={() => {
+                                    // Reset all state
+                                    setShowResults(false);
+                                    setAnalysisData(null);
+                                    setResumeText('');
+                                    setFileName('');
+                                    setScore(0);
+                                    setActiveTab('upload');
+                                    // Optionally clear cache for fresh start
+                                    // atsCache.clearCache(); // Uncomment to clear cache
+                                }}
                                 className="px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-medium hover:bg-slate-800 transition-colors shadow-lg"
                             >
                                 <i className="fa-solid fa-plus mr-2"></i> New Scan

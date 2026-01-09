@@ -117,8 +117,8 @@ export const resumeAPI = {
 export const uploadAPI = {
     uploadResume: (file: File) => {
         const formData = new FormData();
-        formData.append('resume', file);
-        return api.post('/upload/resume', formData, {
+        formData.append('file', file); // Changed from 'resume' to 'file'
+        return api.post('/uploads/resume', formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
@@ -128,7 +128,7 @@ export const uploadAPI = {
     uploadJobDescription: (file: File) => {
         const formData = new FormData();
         formData.append('job_description', file);
-        return api.post('/upload/job-description', formData, {
+        return api.post('/uploads/job-description', formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
@@ -136,7 +136,7 @@ export const uploadAPI = {
     },
 
     analyzeJobDescription: (text: string) =>
-        api.post('/upload/job-description', { text }),
+        api.post('/uploads/job-description', { text }),
 
     getUploadStatus: (uploadId: string) =>
         api.get(`/uploads/${uploadId}/status`),

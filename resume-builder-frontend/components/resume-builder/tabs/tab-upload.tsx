@@ -7,6 +7,7 @@ import { useResumeStore } from '@/lib/stores/resume-store';
 import { FileUploadZone } from '../file-upload-zone';
 import { UploadProgress } from '../upload-progress';
 import { uploadAPI } from '@/lib/api';
+import { atsCache } from '@/lib/ats-cache';
 
 export function TabUpload() {
     const { resumeInputMode, jobInputMode, setResumeInputMode, setJobInputMode, setActiveTab } = useUIStore();
@@ -56,6 +57,10 @@ export function TabUpload() {
             if (data.skills) {
                 updateField('skills', data.skills);
             }
+
+            // Trigger background ATS analysis
+            const resumeText = convertDataToText(data);
+            atsCache.analyzeInBackground(resumeText, jobText || undefined);
 
             // Clear upload state
             setUploadId(null);
@@ -124,6 +129,33 @@ export function TabUpload() {
         } catch (error) {
             toast.error('Failed to analyze job description');
         }
+    };
+
+    // Convert parsed data to text for ATS analysis
+    const convertDataToText = (data: any) => {
+        return `
+${data.personal?.name || ''}
+${data.personal?.title || ''}
+${data.personal?.email || ''} | ${data.personal?.phone || ''}
+${data.personal?.location || ''}
+
+${data.summary ? `PROFESSIONAL SUMMARY\n${data.summary}\n` : ''}
+
+${data.experience?.length ? 'EXPERIENCE\n' + data.experience.map((exp: any) => `
+${exp.position} at ${exp.company}
+${exp.startDate} - ${exp.current ? 'Present' : exp.endDate}
+${exp.description}
+`).join('\n') : ''}
+
+${data.education?.length ? 'EDUCATION\n' + data.education.map((edu: any) => `
+${edu.degree} in ${edu.field}
+${edu.institution}
+${edu.startDate} - ${edu.endDate}
+${edu.gpa ? `GPA: ${edu.gpa}` : ''}
+`).join('\n') : ''}
+
+${data.skills?.length ? `SKILLS\n${data.skills.join(', ')}` : ''}
+`.trim();
     };
 
     return (

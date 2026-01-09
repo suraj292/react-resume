@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useResumeStore } from '@/lib/stores/resume-store';
 import { analyzeResume } from '@/lib/ats-api';
+import { atsCache } from '@/lib/ats-cache';
+import { toast } from 'sonner';
 
 export function TabAI() {
     const { currentResume } = useResumeStore();
@@ -11,6 +13,8 @@ export function TabAI() {
     const [atsData, setAtsData] = useState<any>(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [hasAnalyzed, setHasAnalyzed] = useState(false);
+    const [selectedTone, setSelectedTone] = useState<'Professional' | 'Creative' | 'Direct'>('Professional');
+    const [isGenerating, setIsGenerating] = useState(false);
 
     // Convert resume to text for analysis
     const getResumeText = () => {
@@ -44,6 +48,14 @@ ${currentResume.skills?.length ? `SKILLS\n${currentResume.skills.join(', ')}` : 
     // Analyze resume when component mounts or resume changes
     useEffect(() => {
         const analyzeCurrentResume = async () => {
+            // First, check if we have cached data
+            const cachedData = atsCache.getCachedAnalysis();
+            if (cachedData) {
+                setAtsData(cachedData);
+                setHasAnalyzed(true);
+                return;
+            }
+
             if (!currentResume || hasAnalyzed || isAnalyzing) return;
 
             const resumeText = getResumeText();
@@ -55,6 +67,9 @@ ${currentResume.skills?.length ? `SKILLS\n${currentResume.skills.join(', ')}` : 
                 const result = await analyzeResume(resumeText);
                 setAtsData(result);
                 setHasAnalyzed(true);
+
+                // Cache the result
+                atsCache.updateCache(resumeText, result);
             } catch (error) {
                 console.error('ATS analysis failed:', error);
                 // Set fallback data
@@ -226,8 +241,8 @@ ${currentResume.skills?.length ? `SKILLS\n${currentResume.skills.join(', ')}` : 
                                             {atsData?.keywords?.found || 0} Keywords
                                         </span>
                                         <span className={`px-3 py-1.5 text-xs font-bold rounded-full flex items-center gap-1 ${(atsData?.formatting?.issues || 0) > 0
-                                                ? 'bg-red-100 text-red-700'
-                                                : 'bg-green-100 text-green-700'
+                                            ? 'bg-red-100 text-red-700'
+                                            : 'bg-green-100 text-green-700'
                                             }`}>
                                             <i className={`fa-solid ${(atsData?.formatting?.issues || 0) > 0 ? 'fa-exclamation-triangle' : 'fa-check'} text-[10px]`}></i>
                                             {atsData?.formatting?.issues || 0} Issues
@@ -270,10 +285,11 @@ ${currentResume.skills?.length ? `SKILLS\n${currentResume.skills.join(', ')}` : 
             <div className="mt-8">
                 <h3 className="text-sm font-bold text-slate-700 mb-3">Writing Tone</h3>
                 <div className="grid grid-cols-3 gap-3">
-                    {['Professional', 'Creative', 'Direct'].map((tone) => (
+                    {(['Professional', 'Creative', 'Direct'] as const).map((tone) => (
                         <button
                             key={tone}
-                            className={`p-3 rounded-xl border-2 text-xs font-bold transition-all ${tone === 'Professional'
+                            onClick={() => setSelectedTone(tone)}
+                            className={`p-3 rounded-xl border-2 text-xs font-bold transition-all ${tone === selectedTone
                                 ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
                                 : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
                                 }`}
