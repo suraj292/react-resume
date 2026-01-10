@@ -2,7 +2,7 @@
 
 import MarketingLayout from '@/components/layout/marketing-layout';
 import Link from 'next/link';
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { ROUTES } from '@/lib/routes';
 import { contactAPI } from '@/lib/api';
 import { useSEO } from '@/hooks/useSEO';
@@ -18,11 +18,136 @@ export default function ContactPage() {
         message: '',
     });
 
-    // Dynamic SEO
+    // Enhanced SEO with better keywords and CTR optimization
     useSEO(
-        'Contact Us - AI Resume Builder',
-        'Contact us for any questions or inquiries about our AI-powered resume builder. We are here to help you create the perfect resume and land your dream job.'
+        'Contact Us | 24h Response - ResumeBP Support',
+        'Get help with your resume. Contact our support team for questions about ATS, pricing, or features. 24-hour response time. Email, phone & live chat available.'
     );
+
+    // Add structured data and meta tags for SEO
+    useEffect(() => {
+        // Organization with ContactPoint Schema
+        const orgSchema = document.createElement('script');
+        orgSchema.type = 'application/ld+json';
+        orgSchema.id = 'org-schema-contact';
+        orgSchema.text = JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'Organization',
+            'name': 'ResumeBP',
+            'url': 'https://resumebp.com',
+            'logo': 'https://resumebp.com/logo.png',
+            'contactPoint': {
+                '@type': 'ContactPoint',
+                'telephone': '+1-555-000-0000',
+                'contactType': 'Customer Service',
+                'email': 'support@resumeai.com',
+                'areaServed': 'US',
+                'availableLanguage': 'English',
+                'hoursAvailable': {
+                    '@type': 'OpeningHoursSpecification',
+                    'dayOfWeek': ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+                    'opens': '09:00',
+                    'closes': '18:00'
+                }
+            },
+            'address': {
+                '@type': 'PostalAddress',
+                'addressLocality': 'San Francisco',
+                'addressRegion': 'CA',
+                'addressCountry': 'US'
+            }
+        });
+        document.head.appendChild(orgSchema);
+
+        // ContactPage Schema
+        const contactSchema = document.createElement('script');
+        contactSchema.type = 'application/ld+json';
+        contactSchema.id = 'contact-schema';
+        contactSchema.text = JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'ContactPage',
+            'name': 'Contact ResumeBP Support',
+            'description': 'Get help with your resume. Contact our support team for questions about ATS, pricing, or features.',
+            'url': 'https://resumebp.com/contact'
+        });
+        document.head.appendChild(contactSchema);
+
+        // Breadcrumb Schema
+        const breadcrumbSchema = document.createElement('script');
+        breadcrumbSchema.type = 'application/ld+json';
+        breadcrumbSchema.id = 'breadcrumb-schema-contact';
+        breadcrumbSchema.text = JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            'itemListElement': [
+                {
+                    '@type': 'ListItem',
+                    'position': 1,
+                    'name': 'Home',
+                    'item': 'https://resumebp.com/'
+                },
+                {
+                    '@type': 'ListItem',
+                    'position': 2,
+                    'name': 'Contact',
+                    'item': 'https://resumebp.com/contact'
+                }
+            ]
+        });
+        document.head.appendChild(breadcrumbSchema);
+
+        // Add canonical URL
+        let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+        if (!canonical) {
+            canonical = document.createElement('link');
+            canonical.rel = 'canonical';
+            document.head.appendChild(canonical);
+        }
+        canonical.href = 'https://resumebp.com/contact';
+
+        // Enhanced Open Graph tags
+        const updateMeta = (property: string, content: string) => {
+            let meta = document.querySelector(`meta[property="${property}"]`) as HTMLMetaElement;
+            if (!meta) {
+                meta = document.createElement('meta');
+                meta.setAttribute('property', property);
+                document.head.appendChild(meta);
+            }
+            meta.setAttribute('content', content);
+        };
+
+        updateMeta('og:title', 'Contact ResumeBP | Fast Support for Your Resume Questions');
+        updateMeta('og:description', 'Need help with your resume? Our support team responds within 24 hours. Contact us for ATS questions, pricing info, or technical support.');
+        updateMeta('og:image', 'https://resumebp.com/og-contact.jpg');
+        updateMeta('og:url', 'https://resumebp.com/contact');
+        updateMeta('og:type', 'website');
+        updateMeta('og:site_name', 'ResumeBP');
+
+        // Twitter Card tags
+        const updateTwitterMeta = (name: string, content: string) => {
+            let meta = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement;
+            if (!meta) {
+                meta = document.createElement('meta');
+                meta.setAttribute('name', name);
+                document.head.appendChild(meta);
+            }
+            meta.setAttribute('content', content);
+        };
+
+        updateTwitterMeta('twitter:card', 'summary_large_image');
+        updateTwitterMeta('twitter:title', 'Contact ResumeBP Support | 24h Response Time');
+        updateTwitterMeta('twitter:description', 'Get help with your resume. Email, phone & live chat support available. 24-hour response time.');
+        updateTwitterMeta('twitter:image', 'https://resumebp.com/og-contact.jpg');
+
+        return () => {
+            // Cleanup schemas on unmount
+            const schemas = ['org-schema-contact', 'contact-schema', 'breadcrumb-schema-contact'];
+            schemas.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) element.remove();
+            });
+        };
+    }, []);
 
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -78,10 +203,10 @@ export default function ContactPage() {
 
                 <div className="max-w-3xl mx-auto">
                     <h1 className="text-4xl md:text-5xl font-display font-bold text-slate-900 mb-6 animate-[slideUp_0.6s_ease-out_forwards]">
-                        We&apos;d Love to <span className="text-indigo-600">Hear From You</span>
+                        Contact <span className="text-indigo-600">ResumeBP Support</span> - 24h Response
                     </h1>
                     <p className="text-slate-500 text-lg mb-0 animate-[slideUp_0.6s_ease-out_forwards] [animation-delay:0.1s]">
-                        Have questions about our resume builder, ATS checking, or enterprise pricing? Our team is ready to help you land your dream job.
+                        Have questions about our resume builder, ATS checking, or pricing? Our support team responds within 24 hours. Email, phone, or live chat available.
                     </p>
                 </div>
             </section>

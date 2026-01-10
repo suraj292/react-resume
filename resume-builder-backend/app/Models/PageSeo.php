@@ -20,6 +20,7 @@ class PageSeo extends Model
         'og_image',
         'og_type',
         'og_url',
+        'og_site_name',
         'twitter_card',
         'twitter_title',
         'twitter_description',

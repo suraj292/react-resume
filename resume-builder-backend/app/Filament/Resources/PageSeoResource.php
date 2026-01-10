@@ -123,6 +123,11 @@ class PageSeoResource extends Resource
                                     ->label('OG URL')
                                     ->url()
                                     ->helperText('Full URL of the page'),
+                                
+                                Forms\Components\TextInput::make('og_site_name')
+                                    ->label('OG Site Name')
+                                    ->maxLength(255)
+                                    ->helperText('Name of your website (e.g., ResumeBP)'),
                             ]),
 
                         // Twitter Card Tab
