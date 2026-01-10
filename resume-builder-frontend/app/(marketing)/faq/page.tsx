@@ -2,7 +2,7 @@
 
 import MarketingLayout from '@/components/layout/marketing-layout';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ROUTES } from '@/lib/routes';
 import { useSEO } from '@/hooks/useSEO';
 
@@ -50,11 +50,108 @@ export default function FAQPage() {
     const [activeCategory, setActiveCategory] = useState<string>('all');
     const [searchQuery, setSearchQuery] = useState('');
 
-    // Dynamic SEO
+    // Enhanced SEO with better keywords and CTR optimization
     useSEO(
-        'FAQ - AI Resume Builder',
-        'Frequently Asked Questions about our AI Resume Builder. Learn how to create an ATS-friendly resume and optimize your job applications.'
+        'FAQ - Resume Builder Questions Answered | ResumeBP',
+        'Get answers to resume builder questions. Learn about ATS optimization, pricing, features & security. Instant answers to create the perfect resume.'
     );
+
+    // Add structured data and meta tags for SEO
+    useEffect(() => {
+        // FAQPage Schema with all questions
+        const faqSchema = document.createElement('script');
+        faqSchema.type = 'application/ld+json';
+        faqSchema.id = 'faq-schema';
+        faqSchema.text = JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            'mainEntity': faqs.map(faq => ({
+                '@type': 'Question',
+                'name': faq.question,
+                'acceptedAnswer': {
+                    '@type': 'Answer',
+                    'text': faq.answer
+                }
+            }))
+        });
+        document.head.appendChild(faqSchema);
+
+        // Breadcrumb Schema
+        const breadcrumbSchema = document.createElement('script');
+        breadcrumbSchema.type = 'application/ld+json';
+        breadcrumbSchema.id = 'breadcrumb-schema-faq';
+        breadcrumbSchema.text = JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            'itemListElement': [
+                {
+                    '@type': 'ListItem',
+                    'position': 1,
+                    'name': 'Home',
+                    'item': 'https://resumebp.com/'
+                },
+                {
+                    '@type': 'ListItem',
+                    'position': 2,
+                    'name': 'FAQ',
+                    'item': 'https://resumebp.com/faq'
+                }
+            ]
+        });
+        document.head.appendChild(breadcrumbSchema);
+
+        // Add canonical URL
+        let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+        if (!canonical) {
+            canonical = document.createElement('link');
+            canonical.rel = 'canonical';
+            document.head.appendChild(canonical);
+        }
+        canonical.href = 'https://resumebp.com/faq';
+
+        // Enhanced Open Graph tags
+        const updateMeta = (property: string, content: string) => {
+            let meta = document.querySelector(`meta[property="${property}"]`) as HTMLMetaElement;
+            if (!meta) {
+                meta = document.createElement('meta');
+                meta.setAttribute('property', property);
+                document.head.appendChild(meta);
+            }
+            meta.setAttribute('content', content);
+        };
+
+        updateMeta('og:title', 'Frequently Asked Questions | ResumeBP Resume Builder');
+        updateMeta('og:description', 'Find instant answers to your resume builder questions. ATS optimization, pricing, features, security & more. Get help creating the perfect resume.');
+        updateMeta('og:image', 'https://resumebp.com/og-faq.jpg');
+        updateMeta('og:url', 'https://resumebp.com/faq');
+        updateMeta('og:type', 'website');
+        updateMeta('og:site_name', 'ResumeBP');
+
+        // Twitter Card tags
+        const updateTwitterMeta = (name: string, content: string) => {
+            let meta = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement;
+            if (!meta) {
+                meta = document.createElement('meta');
+                meta.setAttribute('name', name);
+                document.head.appendChild(meta);
+            }
+            meta.setAttribute('content', content);
+        };
+
+        updateTwitterMeta('twitter:card', 'summary_large_image');
+        updateTwitterMeta('twitter:title', 'Resume Builder FAQ | Instant Answers - ResumeBP');
+        updateTwitterMeta('twitter:description', 'Get answers to resume builder questions. ATS, pricing, features & security covered.');
+        updateTwitterMeta('twitter:image', 'https://resumebp.com/og-faq.jpg');
+
+        return () => {
+            // Cleanup schemas on unmount
+            const schemas = ['faq-schema', 'breadcrumb-schema-faq'];
+            schemas.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) element.remove();
+            });
+        };
+    }, []);
 
     const toggleAccordion = (index: number) => {
         setActiveIndex(activeIndex === index ? null : index);
@@ -84,10 +181,10 @@ export default function FAQPage() {
                 </div>
 
                 <h1 className="text-4xl md:text-5xl font-display font-bold text-slate-900 mb-6 animate-[slideUp_0.6s_ease-out_forwards]">
-                    Frequently Asked <span className="text-indigo-600">Questions</span>
+                    Resume Builder <span className="text-indigo-600">FAQ</span> - Instant Answers
                 </h1>
                 <p className="text-slate-500 text-lg mb-10 max-w-2xl mx-auto animate-[slideUp_0.6s_ease-out_forwards]" style={{ animationDelay: '0.1s' }}>
-                    Everything you need to know about building ATS-friendly resumes, our pricing, and how our AI technology works.
+                    Everything you need to know about building ATS-friendly resumes, pricing, features, and how our AI technology works. Search or browse by category.
                 </p>
 
                 {/* Search FAQ */}
