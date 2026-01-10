@@ -95,16 +95,47 @@ export function PreviewPanel() {
 
     const { personal, social, summary, experience = [], education = [], skills = [], templateId, colorId } = currentResume;
 
-    // Safety check for personal data
-    if (!personal) {
-        return (
-            <section className="hidden lg:flex lg:flex-[1.2] bg-slate-50 overflow-y-auto custom-scrollbar p-8">
-                <div className="w-full max-w-2xl mx-auto flex items-center justify-center h-full">
-                    <p className="text-slate-400">Loading preview...</p>
-                </div>
-            </section>
-        );
-    }
+    // Provide placeholder data for empty fields so template always shows
+    const displayPersonal = personal || {
+        name: 'Your Name',
+        title: 'Your Job Title',
+        email: 'your.email@example.com',
+        phone: '+1 (555) 123-4567',
+        location: 'City, State',
+    };
+
+    const displaySocial = social || {};
+
+    const displaySummary = summary || 'Add a professional summary to highlight your key skills and experience. This section helps recruiters quickly understand your value proposition.';
+
+    const displayExperience = experience.length > 0 ? experience : [
+        {
+            id: 'placeholder-1',
+            company: 'Company Name',
+            position: 'Job Title',
+            startDate: '2020-01',
+            endDate: null,
+            current: true,
+            description: 'Describe your key responsibilities and achievements in this role. Use bullet points to highlight your impact and contributions.',
+        },
+    ];
+
+    const displayEducation = education.length > 0 ? education : [
+        {
+            id: 'placeholder-1',
+            institution: 'University Name',
+            degree: 'Bachelor of Science',
+            field: 'Computer Science',
+            startDate: '2016',
+            endDate: '2020',
+            gpa: '3.8',
+        },
+    ];
+
+    const displaySkills = skills.length > 0 ? skills : [
+        'JavaScript', 'React', 'Node.js', 'Python', 'SQL', 'Git',
+        'AWS', 'Docker', 'TypeScript', 'MongoDB'
+    ];
 
     // Color mapping
     const colors: Record<string, string> = {
@@ -128,13 +159,13 @@ export function PreviewPanel() {
     };
 
     // Format experience and education dates
-    const formattedExperience = experience.map(exp => ({
+    const formattedExperience = displayExperience.map(exp => ({
         ...exp,
         startDate: formatDate(exp.startDate),
         endDate: formatDate(exp.endDate),
     }));
 
-    const formattedEducation = education.map(edu => ({
+    const formattedEducation = displayEducation.map(edu => ({
         ...edu,
         startDate: formatDate(edu.startDate),
         endDate: formatDate(edu.endDate),
@@ -172,12 +203,12 @@ export function PreviewPanel() {
         };
 
         const templateProps = {
-            personal,
-            social,
-            summary,
+            personal: displayPersonal,
+            social: displaySocial,
+            summary: displaySummary,
             experience: formattedExperience,
             education: formattedEducation,
-            skills,
+            skills: displaySkills,
             accentColor,
             onUpdatePersonal: handleUpdatePersonal,
             onUpdateSummary: handleUpdateSummary,
@@ -295,7 +326,7 @@ export function PreviewPanel() {
                 </div>
 
                 {/* Multi-page indicator */}
-                {(experience.length > 2 || education.length > 2 || skills.length > 10) && (
+                {(displayExperience.length > 2 || displayEducation.length > 2 || displaySkills.length > 10) && (
                     <div className="mt-6 text-center">
                         <p className="text-xs text-slate-400 italic">
                             <i className="fa-solid fa-file-lines mr-2" />

@@ -11,16 +11,18 @@ use Illuminate\Validation\ValidationException;
 class ResumeController extends Controller
 {
     /**
-     * Display a listing of the user's resumes.
+     * Display a listing of the user's resumes (including soft-deleted).
      */
     public function index()
     {
         // For testing: return all resumes if no auth
         if (!Auth::check()) {
-            return response()->json(Resume::all());
+            return response()->json(Resume::withTrashed()->get());
         }
         
+        // Include soft-deleted resumes so frontend can show deleted view
         $resumes = Auth::user()->resumes()
+            ->withTrashed()
             ->latest()
             ->get();
 
@@ -37,6 +39,8 @@ class ResumeController extends Controller
             'data' => 'required|array',
             'template_id' => 'nullable|string',
             'color_id' => 'nullable|string',
+            'ats_score' => 'nullable|integer|min:0|max:100',
+            'ats_data' => 'nullable|array',
         ]);
 
         // For testing: use first user if no auth
@@ -55,11 +59,12 @@ class ResumeController extends Controller
     }
 
     /**
-     * Display the specified resume.
+     * Display the specified resume (including soft-deleted).
      */
     public function show($id)
     {
-        $resume = Resume::findOrFail($id);
+        // Include soft-deleted resumes
+        $resume = Resume::withTrashed()->findOrFail($id);
 
         return response()->json($resume)
             ->header('ETag', $resume->etag);
@@ -86,6 +91,8 @@ class ResumeController extends Controller
             'data' => 'sometimes|array',
             'template_id' => 'sometimes|string',
             'color_id' => 'sometimes|string',
+            'ats_score' => 'sometimes|integer|min:0|max:100',
+            'ats_data' => 'sometimes|array',
         ]);
 
         $resume->update($validated);
@@ -96,7 +103,7 @@ class ResumeController extends Controller
     }
 
     /**
-     * Remove the specified resume.
+     * Remove the specified resume (soft delete).
      */
     public function destroy($id)
     {
@@ -104,5 +111,16 @@ class ResumeController extends Controller
         $resume->delete();
 
         return response()->json(null, 204);
+    }
+
+    /**
+     * Restore a soft-deleted resume.
+     */
+    public function restore($id)
+    {
+        $resume = Resume::withTrashed()->findOrFail($id);
+        $resume->restore();
+
+        return response()->json($resume);
     }
 }

@@ -8,6 +8,7 @@ import { useResumeStore } from '@/lib/stores/resume-store';
 import { useUIStore } from '@/lib/stores/ui-store';
 import { useAuth } from '@/contexts/AuthContext';
 import { pdfAPI } from '@/lib/api';
+import { toast } from 'sonner';
 
 interface NavbarProps {
     isSaving: boolean;
@@ -52,9 +53,26 @@ export function Navbar({ isSaving, isDirty }: NavbarProps) {
     const handleExportPDF = async () => {
         setIsExporting(true);
         try {
+            // First, save the resume to backend if user is logged in
+            if (user && currentResume) {
+                try {
+                    toast.loading('Saving resume...', { id: 'save-resume' });
+                    const { saveResume } = useResumeStore.getState();
+                    await saveResume();
+                    toast.success('Resume saved successfully!', { id: 'save-resume' });
+                    console.log('Resume saved successfully before export');
+                } catch (saveError) {
+                    console.error('Failed to save resume before export:', saveError);
+                    toast.error('Failed to save resume, but continuing with export...', { id: 'save-resume' });
+                    // Continue with export even if save fails
+                }
+            }
+
+            toast.loading('Generating PDF...', { id: 'export-pdf' });
+
             const resumeElement = document.getElementById('resume-sheet');
             if (!resumeElement) {
-                alert('Resume preview not found');
+                toast.error('Resume preview not found', { id: 'export-pdf' });
                 setIsExporting(false);
                 return;
             }
@@ -148,11 +166,12 @@ export function Navbar({ isSaving, isDirty }: NavbarProps) {
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
 
+            toast.success('PDF exported successfully!', { id: 'export-pdf' });
             setIsExporting(false);
 
         } catch (error) {
             console.error('Error exporting PDF:', error);
-            alert('Failed to export PDF. Please try again.');
+            toast.error('Failed to export PDF. Please try again.', { id: 'export-pdf' });
             setIsExporting(false);
         }
     };

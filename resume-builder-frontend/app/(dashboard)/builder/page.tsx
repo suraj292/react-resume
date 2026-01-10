@@ -19,18 +19,16 @@ import { MobileBottomNav } from '@/components/resume-builder/mobile-bottom-nav';
 import { Toaster } from 'sonner';
 
 export default function ResumeBuilderPage() {
-    // Use a default resume ID since we're now at /builder instead of /builder/[id]
-    const resumeId = '1';
-
-    const { loadResume, currentResume } = useResumeStore();
+    const { initializeBlankResume, currentResume } = useResumeStore();
     const { activeTab, isMobileSidebarOpen, toggleMobileSidebar } = useUIStore();
-    const { isSaving, isDirty } = useAutoSave(resumeId);
+    const { isSaving, isDirty } = useAutoSave('new');
     const { user, loading } = useAuth();
     const [showAuthModal, setShowAuthModal] = useState(false);
 
     useEffect(() => {
-        loadResume(resumeId);
-    }, [resumeId, loadResume]);
+        // Initialize a blank resume when the page loads
+        initializeBlankResume();
+    }, [initializeBlankResume]);
 
     // Show auth modal if user is not logged in
     useEffect(() => {

@@ -108,6 +108,9 @@ export const resumeAPI = {
 
     delete: (id: string | number) =>
         api.delete(`/resumes/${id}`),
+
+    restore: (id: string | number) =>
+        api.post(`/resumes/${id}/restore`),
 };
 
 // ============================================================================

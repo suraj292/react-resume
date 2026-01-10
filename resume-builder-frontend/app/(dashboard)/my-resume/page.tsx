@@ -14,6 +14,7 @@ interface Resume {
     updated_at: string;
     created_at: string;
     is_draft?: boolean;
+    deleted_at?: string | null;
 }
 
 export default function MyResumePage() {
@@ -30,6 +31,7 @@ export default function MyResumePage() {
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
     const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
+    const [showDeleted, setShowDeleted] = useState(false);
 
     useEffect(() => {
         if (!loading && !user) {
@@ -44,8 +46,16 @@ export default function MyResumePage() {
             try {
                 setIsLoadingResumes(true);
                 const response = await resumeAPI.getAll();
-                if (response.data.success) {
-                    setResumes(response.data.data || []);
+                console.log('API Response:', response.data);
+
+                // API returns array directly, not wrapped in success object
+                if (Array.isArray(response.data)) {
+                    setResumes(response.data);
+                } else if (response.data.success && response.data.data) {
+                    // Fallback for wrapped response
+                    setResumes(response.data.data);
+                } else {
+                    setResumes([]);
                 }
             } catch (error) {
                 console.error('Failed to load resumes:', error);
@@ -84,13 +94,34 @@ export default function MyResumePage() {
 
         try {
             await resumeAPI.delete(resumeToDelete);
-            setResumes(resumes.filter(r => r.id !== resumeToDelete));
+            // Remove from list or reload
+            const response = await resumeAPI.getAll();
+            if (Array.isArray(response.data)) {
+                setResumes(response.data);
+            }
             setShowDeleteModal(false);
             setResumeToDelete(null);
-            displayToast('Resume deleted successfully');
+            displayToast(showDeleted ? 'Resume permanently deleted' : 'Resume deleted successfully');
         } catch (error) {
             console.error('Failed to delete resume:', error);
             displayToast('Failed to delete resume');
+        }
+    };
+
+    const handleRestoreClick = async (resumeId: number) => {
+        try {
+            // Call restore API endpoint
+            await resumeAPI.restore(resumeId);
+            // Reload resumes to update the list
+            const response = await resumeAPI.getAll();
+            if (Array.isArray(response.data)) {
+                setResumes(response.data);
+            }
+            setActiveMenuId(null);
+            displayToast('Resume restored successfully');
+        } catch (error) {
+            console.error('Failed to restore resume:', error);
+            displayToast('Failed to restore resume');
         }
     };
 
@@ -100,9 +131,13 @@ export default function MyResumePage() {
         setTimeout(() => setShowToast(false), 3000);
     };
 
-    const filteredResumes = resumes.filter(resume =>
-        resume.title.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredResumes = resumes.filter(resume => {
+        const matchesSearch = resume.title.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesDeletedFilter = showDeleted
+            ? resume.deleted_at !== null
+            : resume.deleted_at === null;
+        return matchesSearch && matchesDeletedFilter;
+    });
 
     const getAverageAtsScore = () => {
         const scoresWithValues = resumes.filter(r => r.ats_score && r.ats_score > 0);
@@ -275,6 +310,17 @@ export default function MyResumePage() {
                                 <i className="fa-solid fa-list"></i>
                             </button>
                         </div>
+                        <div className="h-4 w-px bg-slate-200"></div>
+                        <button
+                            onClick={() => setShowDeleted(!showDeleted)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${showDeleted
+                                ? 'bg-red-100 text-red-700 border border-red-200'
+                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                }`}
+                        >
+                            <i className={`fa-solid ${showDeleted ? 'fa-trash-arrow-up' : 'fa-trash'}`}></i>
+                            {showDeleted ? 'Deleted' : 'Active'}
+                        </button>
                     </div>
                 </div>
 
@@ -364,19 +410,39 @@ export default function MyResumePage() {
                                     {/* Dropdown Menu */}
                                     {activeMenuId === resume.id && (
                                         <div className="absolute right-4 top-48 bg-white border border-slate-100 shadow-xl rounded-xl w-36 py-1 z-10">
-                                            <button className="w-full text-left px-4 py-2 text-xs text-slate-600 hover:bg-slate-50 hover:text-indigo-600">
-                                                <i className="fa-regular fa-copy mr-2"></i> Duplicate
-                                            </button>
-                                            <button className="w-full text-left px-4 py-2 text-xs text-slate-600 hover:bg-slate-50 hover:text-indigo-600">
-                                                <i className="fa-regular fa-pen-to-square mr-2"></i> Rename
-                                            </button>
-                                            <div className="h-px bg-slate-100 my-1"></div>
-                                            <button
-                                                onClick={() => handleDeleteClick(resume.id)}
-                                                className="w-full text-left px-4 py-2 text-xs text-red-500 hover:bg-red-50"
-                                            >
-                                                <i className="fa-regular fa-trash-can mr-2"></i> Delete
-                                            </button>
+                                            {!showDeleted ? (
+                                                <>
+                                                    <button className="w-full text-left px-4 py-2 text-xs text-slate-600 hover:bg-slate-50 hover:text-indigo-600">
+                                                        <i className="fa-regular fa-copy mr-2"></i> Duplicate
+                                                    </button>
+                                                    <button className="w-full text-left px-4 py-2 text-xs text-slate-600 hover:bg-slate-50 hover:text-indigo-600">
+                                                        <i className="fa-regular fa-pen-to-square mr-2"></i> Rename
+                                                    </button>
+                                                    <div className="h-px bg-slate-100 my-1"></div>
+                                                    <button
+                                                        onClick={() => handleDeleteClick(resume.id)}
+                                                        className="w-full text-left px-4 py-2 text-xs text-red-500 hover:bg-red-50"
+                                                    >
+                                                        <i className="fa-regular fa-trash-can mr-2"></i> Delete
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <button
+                                                        onClick={() => handleRestoreClick(resume.id)}
+                                                        className="w-full text-left px-4 py-2 text-xs text-green-600 hover:bg-green-50"
+                                                    >
+                                                        <i className="fa-solid fa-trash-arrow-up mr-2"></i> Restore
+                                                    </button>
+                                                    <div className="h-px bg-slate-100 my-1"></div>
+                                                    <button
+                                                        onClick={() => handleDeleteClick(resume.id)}
+                                                        className="w-full text-left px-4 py-2 text-xs text-red-500 hover:bg-red-50"
+                                                    >
+                                                        <i className="fa-solid fa-trash mr-2"></i> Delete Forever
+                                                    </button>
+                                                </>
+                                            )}
                                         </div>
                                     )}
                                 </div>

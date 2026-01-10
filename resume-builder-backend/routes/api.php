@@ -54,6 +54,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('resumes', [ResumeController::class, 'store'])->middleware('plan.limit:resume');
     Route::put('resumes/{resume}', [ResumeController::class, 'update']);
     Route::delete('resumes/{resume}', [ResumeController::class, 'destroy']);
+    Route::post('resumes/{resume}/restore', [ResumeController::class, 'restore']);
 });
 
 // File Upload (with AI limits)

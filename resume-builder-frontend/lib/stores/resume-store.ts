@@ -50,6 +50,8 @@ export interface Resume {
     skills: string[];
     templateId: string;
     colorId: string;
+    ats_score?: number | null;
+    ats_data?: any | null;
     data: any; // Full resume data
     etag: string | null;
     lastSavedAt: Date | null;
@@ -66,6 +68,7 @@ interface ResumeStore {
 
     // Actions
     setResume: (resume: Resume) => void;
+    initializeBlankResume: () => void;
     updateField: (path: string, value: any) => void;
     updatePersonal: (field: keyof PersonalInfo, value: string) => void;
     updateSocial: (field: keyof SocialMedia, value: string) => void;
@@ -99,8 +102,8 @@ export const useResumeStore = create<ResumeStore>()(
                 // Actions
                 setResume: (resume) => {
                     // Map API response structure to expected store structure
-                    // API returns: { id, data: { personal, experience, ... }, template_id, color_id }
-                    // Store expects: { id, personal, experience, ..., templateId, colorId }
+                    // API returns: { id, data: { personal, experience, ... }, template_id, color_id, ats_score, ats_data }
+                    // Store expects: { id, personal, experience, ..., templateId, colorId, ats_score, ats_data }
                     const apiResume = resume as any; // API uses snake_case
                     const mappedResume = {
                         ...resume,
@@ -112,12 +115,55 @@ export const useResumeStore = create<ResumeStore>()(
                         skills: resume.data?.skills || resume.skills || [],
                         templateId: apiResume.template_id || resume.templateId || 'modern',
                         colorId: apiResume.color_id || resume.colorId || 'indigo',
+                        ats_score: apiResume.ats_score || resume.ats_score || null,
+                        ats_data: apiResume.ats_data || resume.ats_data || null,
                     };
 
                     set({
                         currentResume: mappedResume,
                         etag: resume.etag,
                         lastSaved: resume.lastSavedAt
+                    });
+                },
+
+                initializeBlankResume: () => {
+                    const blankResume: Resume = {
+                        id: 'new',
+                        title: 'Untitled Resume',
+                        personal: {
+                            name: '',
+                            title: '',
+                            email: '',
+                            phone: '',
+                            location: '',
+                        },
+                        social: {
+                            github: '',
+                            linkedin: '',
+                            twitter: '',
+                            instagram: '',
+                            pinterest: '',
+                            website: '',
+                        },
+                        summary: '',
+                        experience: [],
+                        education: [],
+                        skills: [],
+                        templateId: 'modern',
+                        colorId: 'indigo',
+                        ats_score: null,
+                        data: {},
+                        etag: null,
+                        lastSavedAt: null,
+                    };
+
+                    set({
+                        currentResume: blankResume,
+                        isDirty: false,
+                        isSaving: false,
+                        lastSaved: null,
+                        etag: null,
+                        saveError: null,
                     });
                 },
 
@@ -398,8 +444,27 @@ export const useResumeStore = create<ResumeStore>()(
                     set({ isSaving: true, saveError: null });
 
                     try {
+                        // Get ATS data from cache if available
+                        let atsScore = currentResume.ats_score;
+                        let atsData = currentResume.ats_data;
+
+                        if (typeof window !== 'undefined') {
+                            try {
+                                const { atsCache } = await import('@/lib/ats-cache');
+
+                                // Get full ATS analysis data
+                                const cachedAnalysis = atsCache.getCachedAnalysis();
+                                if (cachedAnalysis) {
+                                    atsScore = cachedAnalysis.score || atsScore;
+                                    atsData = cachedAnalysis;
+                                }
+                            } catch (error) {
+                                console.error('Failed to get ATS data from cache:', error);
+                            }
+                        }
+
                         // Restructure data for backend API
-                        // Backend expects: { id, title, data: { personal, summary, ... }, template_id, color_id }
+                        // Backend expects: { id, title, data: { personal, summary, ... }, template_id, color_id, ats_score, ats_data }
                         const payload = {
                             title: currentResume.title,
                             data: {
@@ -412,13 +477,22 @@ export const useResumeStore = create<ResumeStore>()(
                             },
                             template_id: currentResume.templateId,
                             color_id: currentResume.colorId,
+                            ats_score: atsScore,
+                            ats_data: atsData,
                         };
 
-                        const response = await resumeAPI.update(currentResume.id, payload, {
-                            headers: {
-                                'If-Match': etag || '',
-                            }
-                        });
+                        let response;
+
+                        // If ID is 'new', create a new resume, otherwise update existing
+                        if (currentResume.id === 'new') {
+                            response = await resumeAPI.create(payload);
+                        } else {
+                            response = await resumeAPI.update(currentResume.id, payload, {
+                                headers: {
+                                    'If-Match': etag || '',
+                                }
+                            });
+                        }
 
                         const newEtag = response.headers['etag'];
                         const savedResume = response.data;

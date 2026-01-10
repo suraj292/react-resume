@@ -18,10 +18,13 @@ class Resume extends Model
         'color_id',
         'etag',
         'last_saved_at',
+        'ats_score',
+        'ats_data',
     ];
 
     protected $casts = [
         'data' => 'array',
+        'ats_data' => 'array',
         'last_saved_at' => 'datetime',
     ];
 
