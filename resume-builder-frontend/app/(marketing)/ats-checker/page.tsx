@@ -42,22 +42,28 @@ export default function ATSCheckerPage() {
         const storedData = localStorage.getItem('ats-resume-data');
         if (storedData) {
             try {
-                const { text, timestamp, cached } = JSON.parse(storedData);
+                const { text, timestamp, savedAtsData, resumeId } = JSON.parse(storedData);
                 // Check if data is less than 5 minutes old
                 if (Date.now() - timestamp < 5 * 60 * 1000) {
                     setResumeText(text);
                     setActiveTab('paste');
                     localStorage.removeItem('ats-resume-data');
 
-                    // If coming from builder with cached data, use it directly
-                    if (cached) {
-                        const cachedAnalysis = atsCache.getCachedAnalysis();
-                        if (cachedAnalysis) {
-                            // Use cached data instantly - no API call!
-                            setAnalysisData(cachedAnalysis);
-                            setShowResults(true);
-                            return;
-                        }
+                    // If coming from a saved resume with ATS data, use it directly
+                    if (savedAtsData && resumeId) {
+                        console.log('Loading saved ATS data for resume:', resumeId);
+                        setAnalysisData(savedAtsData);
+                        setShowResults(true);
+                        return;
+                    }
+
+                    // Otherwise, check cache
+                    const cachedAnalysis = atsCache.getCachedAnalysis();
+                    if (cachedAnalysis) {
+                        // Use cached data instantly - no API call!
+                        setAnalysisData(cachedAnalysis);
+                        setShowResults(true);
+                        return;
                     }
 
                     // Otherwise, auto-start analysis

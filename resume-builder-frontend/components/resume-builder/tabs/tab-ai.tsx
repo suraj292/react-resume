@@ -263,9 +263,16 @@ ${currentResume.skills?.length ? `SKILLS\n${currentResume.skills.join(', ')}` : 
                                     // Store resume data for ATS checker
                                     if (currentResume) {
                                         const resumeText = getResumeText();
+
+                                        // Check if resume has saved ATS data
+                                        const hasSavedAtsData = currentResume.ats_data && Object.keys(currentResume.ats_data).length > 0;
+
                                         localStorage.setItem('ats-resume-data', JSON.stringify({
                                             text: resumeText,
-                                            timestamp: Date.now()
+                                            timestamp: Date.now(),
+                                            // Include saved ATS data if available
+                                            savedAtsData: hasSavedAtsData ? currentResume.ats_data : null,
+                                            resumeId: currentResume.id !== 'new' ? currentResume.id : null,
                                         }));
                                     }
 
