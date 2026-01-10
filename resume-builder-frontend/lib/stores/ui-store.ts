@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
-type TabType = 'upload' | 'manual' | 'ai' | 'templates' | 'colors';
+type TabType = 'upload' | 'manual' | 'ai' | 'templates' | 'colors' | 'myresumes';
 
 interface UIStore {
     // Sidebar & Navigation

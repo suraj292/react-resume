@@ -12,6 +12,7 @@ export function Sidebar() {
         { id: 'ai' as const, icon: 'fa-wand-magic-sparkles', label: 'AI Assistant' },
         { id: 'templates' as const, icon: 'fa-layer-group', label: 'Templates' },
         { id: 'colors' as const, icon: 'fa-palette', label: 'Color Palette' },
+        { id: 'myresumes' as const, icon: 'fa-folder-open', label: 'My Resumes' },
     ];
 
     const handleTabClick = (tabId: typeof tabs[number]['id']) => {

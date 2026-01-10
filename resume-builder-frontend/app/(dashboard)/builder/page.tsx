@@ -13,6 +13,7 @@ import { TabManual } from '@/components/resume-builder/tabs/tab-manual';
 import { TabAI } from '@/components/resume-builder/tabs/tab-ai';
 import { TabTemplates } from '@/components/resume-builder/tabs/tab-templates';
 import { TabColors } from '@/components/resume-builder/tabs/tab-colors';
+import { TabMyResumes } from '@/components/resume-builder/tabs/tab-my-resumes';
 import { PreviewPanel } from '@/components/resume-builder/preview-panel';
 import { MobilePreview } from '@/components/resume-builder/mobile-preview';
 import { MobileBottomNav } from '@/components/resume-builder/mobile-bottom-nav';
@@ -78,6 +79,7 @@ export default function ResumeBuilderPage() {
                             {activeTab === 'ai' && <TabAI />}
                             {activeTab === 'templates' && <TabTemplates />}
                             {activeTab === 'colors' && <TabColors />}
+                            {activeTab === 'myresumes' && <TabMyResumes />}
                         </div>
                     </section>
 
