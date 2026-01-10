@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { cachedAPICall, CACHE_DURATION } from './api-cache';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
@@ -71,10 +72,18 @@ export const authAPI = {
 
 export const pricingAPI = {
     detectCurrency: () =>
-        api.get('/detect-currency'),
+        cachedAPICall(
+            'pricing:currency',
+            () => api.get('/detect-currency'),
+            CACHE_DURATION.VERY_LONG // 24 hours
+        ),
 
     getPlans: () =>
-        api.get('/pricing-plans'),
+        cachedAPICall(
+            'pricing:plans',
+            () => api.get('/pricing-plans'),
+            CACHE_DURATION.LONG // 30 minutes
+        ),
 };
 
 // ============================================================================
@@ -190,9 +199,26 @@ export const paymentAPI = {
 };
 
 export const blogAPI = {
-    getAll: (params?: any) => api.get('/blog/posts', { params }),
-    getBySlug: (slug: string) => api.get(`/blog/posts/${slug}`),
-    getCategories: () => api.get('/blog/categories'),
+    getAll: (params?: any) =>
+        cachedAPICall(
+            `blog:posts:${JSON.stringify(params || {})}`,
+            () => api.get('/blog/posts', { params }),
+            CACHE_DURATION.MEDIUM // 5 minutes
+        ),
+
+    getBySlug: (slug: string) =>
+        cachedAPICall(
+            `blog:post:${slug}`,
+            () => api.get(`/blog/posts/${slug}`),
+            CACHE_DURATION.LONG // 30 minutes
+        ),
+
+    getCategories: () =>
+        cachedAPICall(
+            'blog:categories',
+            () => api.get('/blog/categories'),
+            CACHE_DURATION.VERY_LONG // 24 hours
+        ),
 };
 
 // ============================================================================
@@ -274,14 +300,22 @@ export const seoAPI = {
      */
     getForRoute: (route: string) => {
         const encodedRoute = route === '/' ? '%2F' : route.replace(/^\//, '');
-        return api.get<{ success: boolean; data: PageSeoData }>(`/seo/${encodedRoute}`);
+        return cachedAPICall(
+            `seo:route:${route}`,
+            () => api.get<{ success: boolean; data: PageSeoData }>(`/seo/${encodedRoute}`),
+            CACHE_DURATION.VERY_LONG // 24 hours - SEO data rarely changes
+        );
     },
 
     /**
      * Get all published pages with SEO data
      */
     getAllPages: () =>
-        api.get<{ success: boolean; data: Array<{ page_route: string; page_name: string; meta_title: string; meta_description: string }> }>('/seo'),
+        cachedAPICall(
+            'seo:all-pages',
+            () => api.get<{ success: boolean; data: Array<{ page_route: string; page_name: string; meta_title: string; meta_description: string }> }>('/seo'),
+            CACHE_DURATION.VERY_LONG // 24 hours
+        ),
 };
 
 // ============================================================================
@@ -307,28 +341,42 @@ export const templateAPI = {
      * Get all active templates
      */
     getAll: (params?: { premium?: boolean; complexity?: string }) =>
-        api.get<{ success: boolean; data: TemplateData[] }>('/templates', { params }),
+        cachedAPICall(
+            `templates:all:${JSON.stringify(params || {})}`,
+            () => api.get<{ success: boolean; data: TemplateData[] }>('/templates', { params }),
+            CACHE_DURATION.LONG // 30 minutes
+        ),
 
     /**
      * Get a specific template by ID
      */
     getById: (templateId: string) =>
-        api.get<{ success: boolean; data: TemplateData }>(`/templates/${templateId}`),
+        cachedAPICall(
+            `templates:${templateId}`,
+            () => api.get<{ success: boolean; data: TemplateData }>(`/templates/${templateId}`),
+            CACHE_DURATION.LONG // 30 minutes
+        ),
 
     /**
      * Get all template categories
      */
     getCategories: () =>
-        api.get<{ success: boolean; data: string[] }>('/templates/categories'),
+        cachedAPICall(
+            'templates:categories',
+            () => api.get<{ success: boolean; data: string[] }>('/templates/categories'),
+            CACHE_DURATION.VERY_LONG // 24 hours - categories rarely change
+        ),
 
     /**
      * Track template selection (analytics)
+     * Note: Analytics calls are NOT cached
      */
     trackSelection: (templateId: string) =>
         api.post('/templates/analytics/select', { template_id: templateId }),
 
     /**
      * Track template preview view
+     * Note: Analytics calls are NOT cached
      */
     trackPreview: (templateId: string) =>
         api.post('/templates/analytics/preview', { template_id: templateId }),
