@@ -19,6 +19,8 @@ use App\Http\Controllers\Api\BlogController;
 use App\Http\Controllers\Api\TemplateController;
 use App\Http\Controllers\Api\UserProfileController;
 use App\Http\Controllers\Api\PageSeoController;
+use App\Http\Controllers\Api\RevalidateController;
+use App\Http\Controllers\Api\ContactController;
 
 /*
 |--------------------------------------------------------------------------
@@ -144,4 +146,10 @@ Route::prefix('templates')->group(function () {
         Route::get('/analytics/stats', [TemplateController::class, 'analytics']);
         Route::get('/analytics/stats/{templateId}', [TemplateController::class, 'analytics']);
     });
+});
+
+// Cache Revalidation (for static export deployments)
+Route::prefix('revalidate')->group(function () {
+    Route::get('/', [RevalidateController::class, 'health']);
+    Route::post('/', [RevalidateController::class, 'revalidate']);
 });

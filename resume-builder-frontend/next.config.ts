@@ -1,25 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Image Optimization
+  // Static Export Configuration for Shared Hosting
+  output: 'export',
+  trailingSlash: true,
+
+  // Disable image optimization for static export
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'resumebp.com',
-      },
-      {
-        protocol: 'http',
-        hostname: 'localhost',
-      },
-      {
-        protocol: 'http',
-        hostname: '127.0.0.1',
-      },
-    ],
-    formats: ['image/avif', 'image/webp'],
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    minimumCacheTTL: 60 * 60 * 24 * 365, // 1 year
+    unoptimized: true,
   },
 
   // Compression
@@ -28,7 +15,8 @@ const nextConfig = {
   // Production optimizations
   reactStrictMode: true,
 
-  // Headers for caching
+  // Headers for caching (only applies when using custom server)
+  // These won't work with static export, configure via .htaccess instead
   async headers() {
     return [
       {
@@ -74,14 +62,8 @@ const nextConfig = {
     ];
   },
 
-  async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: 'http://localhost:8000/api/:path*',
-      },
-    ];
-  },
+  // Note: rewrites don't work with static export
+  // API calls should use full URL (configured in .env.production)
 };
 
 export default nextConfig;
