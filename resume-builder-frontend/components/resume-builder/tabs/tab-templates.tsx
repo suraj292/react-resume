@@ -93,11 +93,12 @@ export function TabTemplates() {
 
             case 'creative':
                 return (
-                    <div className={`${baseClasses} flex h-full`}>
+                    <div className={`${baseClasses} flex`}>
                         <div className="w-1/3 p-2 space-y-2" style={{ backgroundColor: accentColor }}>
                             <div className="w-7 h-7 bg-white/20 rounded-full mx-auto" />
                             <div className="h-1 bg-white/30 w-full rounded-full" />
                             <div className="h-1 bg-white/30 w-full rounded-full" />
+                            <div className="h-1 bg-white/30 w-3/4 rounded-full" />
                         </div>
                         <div className="flex-1 p-3 space-y-2">
                             <div className="h-3 w-1/2 rounded-sm" style={{ backgroundColor: 'rgb(15, 23, 42)' }} />
@@ -105,6 +106,10 @@ export function TabTemplates() {
                                 <div className="h-1 bg-slate-200 w-full" />
                                 <div className="h-1 bg-slate-200 w-full" />
                                 <div className="h-1 bg-slate-200 w-2/3" />
+                            </div>
+                            <div className="pt-2 space-y-1">
+                                <div className="h-1 bg-slate-200 w-full" />
+                                <div className="h-1 bg-slate-200 w-5/6" />
                             </div>
                         </div>
                     </div>
