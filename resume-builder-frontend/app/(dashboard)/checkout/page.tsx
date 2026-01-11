@@ -1,13 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import Header from '@/components/layout/header';
 import { pricingAPI, couponAPI, paymentAPI } from '@/lib/api';
 
-export default function CheckoutPage() {
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
+function CheckoutContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { user, loading } = useAuth();
@@ -492,5 +495,20 @@ export default function CheckoutPage() {
                 </div>
             </footer>
         </div>
+    );
+}
+
+export default function CheckoutPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-slate-50">
+                <div className="text-center">
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
+                    <p className="text-slate-600">Loading checkout...</p>
+                </div>
+            </div>
+        }>
+            <CheckoutContent />
+        </Suspense>
     );
 }

@@ -7,6 +7,9 @@ import { RevealOnScroll } from '@/components/reveal-on-scroll';
 import { blogAPI } from '@/lib/api';
 import { format } from 'date-fns';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 export default function BlogPage() {
     const [posts, setPosts] = useState<any[]>([]);
     const [categories, setCategories] = useState<any[]>([]);

@@ -1,5 +1,8 @@
 import { MetadataRoute } from 'next';
 
+// Force dynamic rendering for standalone build
+export const dynamic = 'force-dynamic';
+
 /**
  * Robots.txt configuration
  * Controls search engine crawler access to your site

@@ -19,6 +19,9 @@ import { MobilePreview } from '@/components/resume-builder/mobile-preview';
 import { MobileBottomNav } from '@/components/resume-builder/mobile-bottom-nav';
 import { Toaster } from 'sonner';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 export default function ResumeBuilderPage() {
     const { initializeBlankResume, currentResume } = useResumeStore();
     const { activeTab, isMobileSidebarOpen, toggleMobileSidebar } = useUIStore();

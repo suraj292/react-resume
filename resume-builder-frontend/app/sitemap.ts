@@ -2,6 +2,9 @@ import { MetadataRoute } from 'next';
 import { ROUTES } from '@/lib/routes';
 import axios from 'axios';
 
+// Force dynamic rendering for standalone build
+export const dynamic = 'force-dynamic';
+
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
