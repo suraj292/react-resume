@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::table('resumes', function (Blueprint $table) {
             // Add JSON column to store full ATS analysis data
             if (!Schema::hasColumn('resumes', 'ats_data')) {
-                $table->json('ats_data')->nullable()->after('ats_score');
+                $table->json('ats_data')->nullable();
             }
         });
     }
