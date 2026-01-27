@@ -22,7 +22,17 @@ class PricingPlanController extends Controller
                     'slug' => $plan->slug,
                     'description' => $plan->description,
                     'currency' => $plan->currency,
-                    'features' => $plan->features,
+                    'features' => collect($plan->features)->map(function ($feature) {
+                        // If feature is already an object/array with text and included
+                        if (is_array($feature) && isset($feature['text'])) {
+                            return $feature;
+                        }
+                        // Otherwise, convert string to object format
+                        return [
+                            'text' => $feature,
+                            'included' => true,
+                        ];
+                    })->toArray(),
                     'is_popular' => $plan->is_popular,
                     'button_text' => $plan->button_text,
                     'button_link' => $plan->button_link,
