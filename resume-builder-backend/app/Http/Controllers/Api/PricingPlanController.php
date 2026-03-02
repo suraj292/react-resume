@@ -16,10 +16,16 @@ class PricingPlanController extends Controller
             ->orderBy('sort_order')
             ->get()
             ->map(function ($plan) {
+                // Count accessible templates for this plan
+                $templateCount = \App\Models\ResumeTemplate::active()
+                    ->forPlanTier($plan->slug)
+                    ->count();
+                
                 return [
                     'id' => $plan->id,
                     'name' => $plan->name,
                     'slug' => $plan->slug,
+                    'tier' => $plan->slug,
                     'description' => $plan->description,
                     'currency' => $plan->currency,
                     'features' => collect($plan->features)->map(function ($feature) {
@@ -61,6 +67,7 @@ class PricingPlanController extends Controller
                     'limits' => [
                         'max_resumes' => $plan->max_resumes,
                         'max_templates' => $plan->max_templates,
+                        'template_count' => $templateCount,
                         'max_downloads_per_month' => $plan->max_downloads_per_month,
                         'max_ai_requests_per_month' => $plan->max_ai_requests_per_month,
                         'can_export_pdf' => $plan->can_export_pdf,

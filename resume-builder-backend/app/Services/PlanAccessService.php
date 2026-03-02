@@ -69,17 +69,40 @@ class PlanAccessService
     }
 
     /**
-     * Check if user can access a specific template
+     * Check if user can access a specific template by template_id
      */
-    public function canAccessTemplate(User $user, int $templateIndex = 0): bool
+    public function canAccessTemplate(User $user, string $templateId): bool
     {
         $plan = $this->getUserPlan($user);
         
-        if (!$plan || $plan->max_templates === null) {
-            return true; // Unlimited
+        if (!$plan) {
+            return false;
         }
         
-        return $templateIndex < $plan->max_templates;
+        $template = \App\Models\ResumeTemplate::where('template_id', $templateId)->first();
+        
+        if (!$template) {
+            return false;
+        }
+        
+        return $template->isAccessibleByPlan($plan->slug);
+    }
+
+    /**
+     * Get accessible template IDs for user
+     */
+    public function getAccessibleTemplates(User $user): array
+    {
+        $plan = $this->getUserPlan($user);
+        
+        if (!$plan) {
+            $plan = $this->getFreePlan();
+        }
+        
+        return \App\Models\ResumeTemplate::active()
+            ->forPlanTier($plan->slug)
+            ->pluck('template_id')
+            ->toArray();
     }
 
     /**
@@ -93,7 +116,9 @@ class PlanAccessService
             return 'unlimited';
         }
         
-        return $plan->max_templates;
+        return \App\Models\ResumeTemplate::active()
+            ->forPlanTier($plan->slug)
+            ->count();
     }
 
     /**

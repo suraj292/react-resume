@@ -17,6 +17,7 @@ interface PricingPlan {
     id: number;
     name: string;
     slug: string;
+    tier: string;
     description: string;
     pricing: {
         usd: { monthly: number; yearly: number; formatted_monthly: string; formatted_yearly: string };
@@ -34,6 +35,7 @@ interface PricingPlan {
     limits: {
         max_resumes: number | null;
         max_templates: number | null;
+        template_count: number;
         max_downloads_per_month: number | null;
         max_ai_requests_per_month: number | null;
         can_export_pdf: boolean;
@@ -418,7 +420,7 @@ export default function PricingPage() {
                                                     : 'text-slate-500'
                                                     } ${plan.is_popular ? 'bg-indigo-50/20' : ''}`}
                                             >
-                                                {plan.limits.max_templates === null ? 'Unlimited' : plan.limits.max_templates}
+                                                {plan.limits.template_count || plan.limits.max_templates || 'All'}
                                             </td>
                                         ))}
                                     </tr>

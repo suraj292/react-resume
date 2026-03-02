@@ -17,6 +17,7 @@ class ResumeTemplate extends Model
         'features',
         'is_active',
         'is_premium',
+        'plan_tier',
         'sort_order',
         'best_for',
         'complexity_level',
@@ -60,6 +61,39 @@ class ResumeTemplate extends Model
     public function scopeOrdered($query)
     {
         return $query->orderBy('sort_order');
+    }
+
+    /**
+     * Scope to get templates for a specific plan tier
+     */
+    public function scopeForPlanTier($query, string $tier)
+    {
+        $tierHierarchy = ['free' => 1, 'starter' => 2, 'professional' => 3, 'unlimited' => 4];
+        $userTierLevel = $tierHierarchy[$tier] ?? 1;
+        
+        return $query->where(function ($q) use ($tierHierarchy, $userTierLevel) {
+            foreach ($tierHierarchy as $planTier => $level) {
+                if ($level <= $userTierLevel) {
+                    $q->orWhere('plan_tier', $planTier);
+                }
+            }
+        });
+    }
+
+    /**
+     * Check if template is accessible by a specific plan
+     */
+    public function isAccessibleByPlan(string $planSlug): bool
+    {
+        $tierHierarchy = [
+            'free' => ['free'],
+            'starter' => ['free', 'starter'],
+            'professional' => ['free', 'starter', 'professional'],
+            'unlimited' => ['free', 'starter', 'professional', 'unlimited'],
+        ];
+        
+        $accessibleTiers = $tierHierarchy[$planSlug] ?? ['free'];
+        return in_array($this->plan_tier, $accessibleTiers);
     }
 
     /**

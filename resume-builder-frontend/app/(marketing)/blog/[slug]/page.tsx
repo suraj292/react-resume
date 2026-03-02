@@ -7,10 +7,6 @@ import { blogAPI } from '@/lib/api';
 import { format } from 'date-fns';
 import { useParams } from 'next/navigation';
 
-// Force dynamic rendering
-export const dynamic = 'force-dynamic';
-
-// This page is fully dynamic - no static generation needed for standalone build
 export default function BlogDetailPage() {
     const params = useParams();
     const [article, setArticle] = useState<any>(null);

@@ -25,7 +25,16 @@ class TemplateController extends Controller
             $query->where('complexity_level', $request->complexity);
         }
 
-        $templates = $query->get()->map(function ($template) {
+        $templates = $query->get();
+        
+        // Get user's plan to determine accessible templates
+        $user = auth()->user();
+        $userPlan = $user ? $user->getCurrentPlan() : null;
+        $planSlug = $userPlan ? $userPlan->slug : 'free';
+
+        $templatesData = $templates->map(function ($template) use ($planSlug, $userPlan) {
+            $isAccessible = $template->isAccessibleByPlan($planSlug);
+            
             return [
                 'id' => $template->template_id,
                 'name' => $template->name,
@@ -36,14 +45,21 @@ class TemplateController extends Controller
                 'supported_colors' => $template->supported_colors,
                 'features' => $template->features,
                 'is_premium' => $template->is_premium,
+                'plan_tier' => $template->plan_tier,
                 'best_for' => $template->best_for,
                 'complexity_level' => $template->complexity_level,
+                'locked' => !$isAccessible,
+                'upgrade_required' => !$isAccessible ? $template->plan_tier : null,
             ];
         });
 
         return response()->json([
             'success' => true,
-            'data' => $templates,
+            'data' => $templatesData,
+            'user_plan' => [
+                'slug' => $planSlug,
+                'name' => $userPlan ? $userPlan->name : 'FREE',
+            ],
         ]);
     }
 

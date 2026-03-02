@@ -332,8 +332,11 @@ export interface TemplateData {
     supported_colors: string[];
     features: string[];
     is_premium: boolean;
+    plan_tier: 'free' | 'starter' | 'professional' | 'unlimited';
     best_for: string;
     complexity_level: 'beginner' | 'intermediate' | 'advanced';
+    locked: boolean;
+    upgrade_required: string | null;
 }
 
 export const templateAPI = {

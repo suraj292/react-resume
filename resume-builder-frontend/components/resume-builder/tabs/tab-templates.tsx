@@ -54,10 +54,16 @@ export function TabTemplates() {
 
     // Handle template selection
     const handleTemplateSelect = async (template: TemplateData) => {
-        // Check if template is premium and user doesn't have access
-        if (template.is_premium && !hasPremiumAccess) {
-            // Show upgrade modal or message
-            alert('This is a premium template. Please upgrade your plan to use it.');
+        // Check if template is locked
+        if (template.locked) {
+            // Show upgrade modal with specific tier requirement
+            const tierNames: Record<string, string> = {
+                'starter': 'STARTER',
+                'professional': 'PROFESSIONAL',
+                'unlimited': 'UNLIMITED'
+            };
+            const requiredTier = tierNames[template.upgrade_required || 'starter'] || 'PREMIUM';
+            alert(`This template requires the ${requiredTier} plan. Please upgrade to access it.`);
             return;
         }
 
@@ -211,15 +217,20 @@ export function TabTemplates() {
                             selectedTemplate === template.id
                                 ? 'border-indigo-600 shadow-[0_0_0_2px_#4f46e5]'
                                 : 'border-slate-100',
-                            template.is_premium && !hasPremiumAccess && 'opacity-75'
+                            template.locked && 'opacity-75'
                         )}
                     >
-                        {/* Premium Badge */}
-                        {template.is_premium && (
+                        {/* Tier Badge */}
+                        {template.plan_tier !== 'free' && (
                             <div className="absolute top-4 right-4 z-10">
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-[9px] font-bold bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-lg">
+                                <span className={cn(
+                                    "inline-flex items-center px-2 py-1 rounded-full text-[9px] font-bold shadow-lg",
+                                    template.plan_tier === 'starter' && 'bg-gradient-to-r from-blue-400 to-cyan-500 text-white',
+                                    template.plan_tier === 'professional' && 'bg-gradient-to-r from-purple-400 to-pink-500 text-white',
+                                    template.plan_tier === 'unlimited' && 'bg-gradient-to-r from-amber-400 to-orange-500 text-white'
+                                )}>
                                     <i className="fa-solid fa-crown mr-1" />
-                                    PRO
+                                    {template.plan_tier.toUpperCase()}
                                 </span>
                             </div>
                         )}
@@ -252,8 +263,8 @@ export function TabTemplates() {
                             </div>
                         </div>
 
-                        {/* Premium Lock Overlay */}
-                        {template.is_premium && !hasPremiumAccess && (
+                        {/* Lock Overlay for inaccessible templates */}
+                        {template.locked && (
                             <div className="absolute inset-0 bg-slate-900/5 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                 <div className="bg-white rounded-full p-3 shadow-lg">
                                     <i className="fa-solid fa-lock text-slate-600 text-lg" />
@@ -280,8 +291,11 @@ function getFallbackTemplates(): TemplateData[] {
             supported_colors: ['indigo', 'emerald', 'rose', 'slate', 'amber', 'violet'],
             features: ['Clean Layout', 'ATS-Friendly', 'Modern Design'],
             is_premium: false,
+            plan_tier: 'free',
             best_for: 'Software Engineers, Product Managers',
             complexity_level: 'intermediate',
+            locked: false,
+            upgrade_required: null,
         },
         {
             id: 'creative',
@@ -293,8 +307,11 @@ function getFallbackTemplates(): TemplateData[] {
             supported_colors: ['indigo', 'emerald', 'rose', 'slate', 'amber', 'violet'],
             features: ['Sidebar Layout', 'Visual Appeal'],
             is_premium: false,
+            plan_tier: 'free',
             best_for: 'Designers, Marketers',
             complexity_level: 'intermediate',
+            locked: false,
+            upgrade_required: null,
         },
         {
             id: 'academic',
@@ -306,8 +323,11 @@ function getFallbackTemplates(): TemplateData[] {
             supported_colors: ['indigo', 'emerald', 'rose', 'slate', 'amber', 'violet'],
             features: ['Formal Design', 'Traditional Layout'],
             is_premium: false,
+            plan_tier: 'free',
             best_for: 'Professors, Researchers',
             complexity_level: 'beginner',
+            locked: false,
+            upgrade_required: null,
         },
         {
             id: 'minimal',
@@ -319,8 +339,11 @@ function getFallbackTemplates(): TemplateData[] {
             supported_colors: ['indigo', 'emerald', 'rose', 'slate', 'amber', 'violet'],
             features: ['Minimalist', 'Clean Lines'],
             is_premium: false,
+            plan_tier: 'free',
             best_for: 'All Industries',
             complexity_level: 'beginner',
+            locked: false,
+            upgrade_required: null,
         },
     ];
 }
