@@ -8,6 +8,12 @@ import { ROUTES, isAuthenticated } from '@/lib/routes';
 import { useRouter } from 'next/navigation';
 import { pricingAPI } from '@/lib/api';
 import { useSEO } from '@/hooks/useSEO';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faArrowRight } from '@fortawesome/free-solid-svg-icons';
+
+// Pre-configured Font Awesome arrow component
+const FontAwesomeArrowRight = (props: any) => <FontAwesomeIcon icon={faArrowRight} {...props} />;
+
 import { usePathname } from 'next/navigation';
 
 interface PricingFeature {
@@ -586,7 +592,7 @@ export default function HomePage() {
                             <p className="text-slate-600 mb-6">&quot;I applied to 50 jobs with my old resume and heard nothing. After using ResumeBP, I got 3 interviews in a week!&quot;</p>
                             <div className="font-bold text-sm text-slate-900 flex items-center gap-2">
                                 <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs">SJ</div>
-                                Sarah Jenkins
+                                <span>Sarah Jenkins</span>
                             </div>
                         </div>
                         <div className="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm reveal delay-100 hover-card">
@@ -596,7 +602,7 @@ export default function HomePage() {
                             <p className="text-slate-600 mb-6">&quot;The ATS checker is a lifesaver. I didn&apos;t realize my resume format was unreadable by bots until now.&quot;</p>
                             <div className="font-bold text-sm text-slate-900 flex items-center gap-2">
                                 <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">MD</div>
-                                Mark Davis
+                                <span>Mark Davis</span>
                             </div>
                         </div>
                         <div className="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm reveal delay-200 hover-card">
@@ -606,7 +612,7 @@ export default function HomePage() {
                             <p className="text-slate-600 mb-6">&quot;Simple, fast, and the templates look amazing. Worth every penny for the Pro plan.&quot;</p>
                             <div className="font-bold text-sm text-slate-900 flex items-center gap-2">
                                 <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold text-xs">EL</div>
-                                Emma Lee
+                                <span>Emma Lee</span>
                             </div>
                         </div>
                     </div>
@@ -624,7 +630,7 @@ export default function HomePage() {
                             <p className="mt-4 text-slate-600">Loading pricing...</p>
                         </div>
                     ) : (
-                        <div className="grid md:grid-cols-3 gap-6 items-center">
+                        <div className="grid md:grid-cols-4 gap-6 items-center">
                             {pricingPlans.map((plan, index) => {
                                 const isDark = plan.theme === 'dark';
 
@@ -643,7 +649,7 @@ export default function HomePage() {
                                     <div
                                         key={plan.id}
                                         onClick={handlePlanClick}
-                                        className={`p-6 rounded-xl transition-all opacity-100 cursor-pointer ${isDark
+                                        className={`p-6 rounded-xl transition-all opacity-100 cursor-pointer flex flex-col h-full ${isDark
                                             ? 'bg-slate-900 text-white shadow-xl transform scale-105 relative hover:scale-110 duration-300'
                                             : 'border border-slate-200 text-slate-500 hover:border-indigo-200 hover:shadow-md'
                                             }`}
@@ -664,15 +670,21 @@ export default function HomePage() {
                                                 /month
                                             </p>
                                         )}
-                                        <ul className={`text-sm ${isDark ? 'space-y-3 mb-8 text-slate-300' : 'space-y-2 mb-6 text-slate-600'}`}>
+                                        <ul className={`text-sm flex-1 ${isDark ? 'space-y-3 mb-8 text-slate-300' : 'space-y-2 mb-6 text-slate-600'}`}>
                                             {plan.features.slice(0, isDark ? 4 : 3).map((feature, idx) => (
                                                 <li key={idx}>{feature.text}</li>
                                             ))}
                                         </ul>
                                         {isDark && (
-                                            <div className="block w-full py-3 bg-indigo-600 rounded-xl font-bold hover:bg-indigo-500 transition-colors shadow-lg hover:shadow-indigo-500/50 text-white">
-                                                Get Started
-                                            </div>
+                                            <button
+                                                className={`group/btn relative flex items-center justify-center gap-2 w-full py-4 px-6 rounded-2xl font-bold transition-all duration-200 ${isDark
+                                                        ? 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-[0_0_20px_rgba(79,70,229,0.4)]'
+                                                        : 'bg-slate-50 text-slate-900 hover:bg-indigo-600 hover:text-white border border-slate-200 hover:border-indigo-600'
+                                                    }`}
+                                            >
+                                                <span>Get Started</span>
+                                                <FontAwesomeArrowRight className="transition-transform group-hover/btn:translate-x-1" />
+                                            </button>
                                         )}
                                     </div>
                                 );
