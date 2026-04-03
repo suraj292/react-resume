@@ -233,6 +233,7 @@ export interface UserProfile {
     phone?: string;
     location?: string;
     avatar?: string;
+    currency_preference?: string;
 }
 
 export const userAPI = {

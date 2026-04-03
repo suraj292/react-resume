@@ -2,14 +2,15 @@
 
 namespace App\Traits;
 
-use App\Models\Download;
 use App\Models\AiRequest;
+use App\Models\Download;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 trait TracksUsage
 {
     /**
-     * Track a download
+     * Record a PDF/DOCX download and log the event.
      */
     protected function trackDownload(
         int $userId,
@@ -19,19 +20,27 @@ trait TracksUsage
         ?int $fileSize = null,
         ?Request $request = null
     ): Download {
-        return Download::create([
-            'user_id' => $userId,
-            'resume_id' => $resumeId,
-            'format' => $format,
-            'file_path' => $filePath,
-            'file_size' => $fileSize,
+        $record = Download::create([
+            'user_id'    => $userId,
+            'resume_id'  => $resumeId,
+            'format'     => $format,
+            'file_path'  => $filePath,
+            'file_size'  => $fileSize,
             'ip_address' => $request?->ip(),
             'user_agent' => $request?->userAgent(),
         ]);
+
+        Log::info('usage.download', [
+            'user_id'   => $userId,
+            'resume_id' => $resumeId,
+            'format'    => $format,
+        ]);
+
+        return $record;
     }
 
     /**
-     * Track an AI request
+     * Record an AI request (ATS, resume parsing, job desc parsing) and log it.
      */
     protected function trackAIRequest(
         int $userId,
@@ -43,15 +52,24 @@ trait TracksUsage
         string $status = 'success',
         ?string $errorMessage = null
     ): AiRequest {
-        return AiRequest::create([
-            'user_id' => $userId,
-            'type' => $type,
-            'resume_id' => $resumeId,
-            'request_data' => $requestData,
+        $record = AiRequest::create([
+            'user_id'       => $userId,
+            'type'          => $type,
+            'resume_id'     => $resumeId,
+            'request_data'  => $requestData,
             'response_data' => $responseData,
-            'tokens_used' => $tokensUsed,
-            'status' => $status,
+            'tokens_used'   => $tokensUsed,
+            'status'        => $status,
             'error_message' => $errorMessage,
         ]);
+
+        Log::info('usage.ai_request', [
+            'user_id'     => $userId,
+            'type'        => $type,
+            'tokens_used' => $tokensUsed,
+            'status'      => $status,
+        ]);
+
+        return $record;
     }
 }

@@ -63,9 +63,21 @@ return [
     ],
 
     'github' => [
-        'client_id' => env('GITHUB_CLIENT_ID'),
+        'client_id'     => env('GITHUB_CLIENT_ID'),
         'client_secret' => env('GITHUB_CLIENT_SECRET'),
-        'redirect' => env('GITHUB_REDIRECT_URI', env('APP_URL') . '/api/auth/github/callback'),
+        'redirect'      => env('GITHUB_REDIRECT_URI', env('APP_URL') . '/api/auth/github/callback'),
+    ],
+
+    'razorpay' => [
+        'key'    => env('RAZORPAY_KEY_ID'),
+        'secret' => env('RAZORPAY_KEY_SECRET'),
+    ],
+
+    'browsershot' => [
+        // Set these in .env to avoid per-request shell_exec overhead.
+        // Examples: /usr/local/bin/node and /usr/local/bin/npm
+        'node_binary' => env('BROWSERSHOT_NODE_BINARY'),
+        'npm_binary'  => env('BROWSERSHOT_NPM_BINARY'),
     ],
 
 ];

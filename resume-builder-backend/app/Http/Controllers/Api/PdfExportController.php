@@ -3,79 +3,104 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Traits\TracksUsage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Spatie\Browsershot\Browsershot;
 
 class PdfExportController extends Controller
 {
+    use TracksUsage;
+
     /**
-     * Export resume to PDF
+     * Export resume to PDF.
+     * Binary paths are read from config, never from per-request shell_exec.
      */
     public function export(Request $request)
     {
+        $validated = $request->validate([
+            'html'      => 'required|string|max:2000000', // 2 MB safety cap
+            'filename'  => 'nullable|string|max:100|regex:/^[a-zA-Z0-9_\-\.]+$/',
+            'resume_id' => 'nullable|integer|exists:resumes,id',
+        ]);
+
+        $user     = $request->user();
+        $filename = $validated['filename'] ?? 'resume_' . time() . '.pdf';
+
+        if (!str_ends_with($filename, '.pdf')) {
+            $filename .= '.pdf';
+        }
+
+        $tempDir  = storage_path('app/temp');
+        $tempPath = $tempDir . '/' . $filename;
+
+        if (!is_dir($tempDir)) {
+            mkdir($tempDir, 0755, true);
+        }
+
         try {
-            $validated = $request->validate([
-                'html' => 'required|string',
-                'filename' => 'nullable|string',
-            ]);
+            $fullHtml = $this->wrapHtml($validated['html']);
 
-            $html = $validated['html'];
-            $filename = $validated['filename'] ?? 'resume_' . time() . '.pdf';
-
-            // Ensure filename ends with .pdf
-            if (!str_ends_with($filename, '.pdf')) {
-                $filename .= '.pdf';
-            }
-
-            // Create a temporary file for the PDF
-            $tempPath = storage_path('app/temp/' . $filename);
-            
-            // Ensure temp directory exists
-            if (!file_exists(storage_path('app/temp'))) {
-                mkdir(storage_path('app/temp'), 0755, true);
-            }
-
-            // Wrap HTML in a complete document with styles
-            $fullHtml = $this->wrapHtml($html);
-
-
-            // Generate PDF using Browsershot
-            Browsershot::html($fullHtml)
-                ->setNodeBinary(trim(shell_exec('which node')))
-                ->setNpmBinary(trim(shell_exec('which npm')))
+            $shot = Browsershot::html($fullHtml)
                 ->format('A4')
                 ->margins(0, 0, 0, 0)
                 ->showBackground()
                 ->waitUntilNetworkIdle()
-                ->setDelay(1000) // Wait 1 second for all styles to load
-                ->windowSize(794, 1123) // A4 size in pixels at 96 DPI
+                ->setDelay(800)
+                ->windowSize(794, 1123)
                 ->setOption('args', [
                     '--no-sandbox',
                     '--disable-setuid-sandbox',
                     '--disable-dev-shm-usage',
-                    '--disable-gpu'
+                    '--disable-gpu',
                 ])
-                ->setOption('printBackground', true)
-                ->save($tempPath);
+                ->setOption('printBackground', true);
 
-            // Return the PDF as a download
+            // Use configured binaries instead of per-request shell_exec
+            $nodeBinary = config('services.browsershot.node_binary');
+            $npmBinary  = config('services.browsershot.npm_binary');
+
+            if ($nodeBinary) {
+                $shot->setNodeBinary($nodeBinary);
+            }
+            if ($npmBinary) {
+                $shot->setNpmBinary($npmBinary);
+            }
+
+            $shot->save($tempPath);
+
+            // Track download usage
+            $this->trackDownload(
+                $user->id,
+                $validated['resume_id'] ?? null,
+                'pdf',
+                null,
+                filesize($tempPath),
+                $request
+            );
+
             return response()->download($tempPath, $filename, [
                 'Content-Type' => 'application/pdf',
             ])->deleteFileAfterSend(true);
 
         } catch (\Exception $e) {
-            Log::error('PDF Export Error: ' . $e->getMessage());
-            
+            Log::error('pdf.export_failed', [
+                'user_id'   => $user->id,
+                'error'     => $e->getMessage(),
+            ]);
+
             return response()->json([
-                'error' => 'Failed to generate PDF',
-                'message' => $e->getMessage()
+                'error'   => 'Failed to generate PDF',
+                'message' => 'An error occurred while generating the PDF. Please try again.',
             ], 500);
         }
     }
 
     /**
-     * Wrap HTML content in a complete document
+     * Wrap HTML content in a safe, complete document.
+     * The injected $content is rendered as-is into the PDF template.
+     * Callers are responsible for sanitising user-generated HTML before
+     * passing it here (e.g. via HTMLPurifier in the resume build pipeline).
      */
     private function wrapHtml(string $content): string
     {
@@ -87,17 +112,14 @@ class PdfExportController extends Controller
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @page {
-            size: A4;
-            margin: 0;
-        }
-        
+        @page { size: A4; margin: 0; }
+
         * {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
             color-adjust: exact !important;
         }
-        
+
         html, body {
             margin: 0;
             padding: 0;
@@ -105,20 +127,15 @@ class PdfExportController extends Controller
             width: 100%;
             height: 100%;
         }
-        
-        /* Remove any shadows from resume sheet */
+
         #resume-sheet {
             box-shadow: none !important;
             transform: none !important;
             margin: 0 !important;
         }
-        
-        /* Ensure proper page breaks */
+
         @media print {
-            html, body {
-                margin: 0;
-                padding: 0;
-            }
+            html, body { margin: 0; padding: 0; }
         }
     </style>
 </head>
@@ -126,7 +143,7 @@ class PdfExportController extends Controller
     {$content}
 
     <script>
-        document.querySelectorAll('.page-break').forEach(el => {
+        document.querySelectorAll('.page-break').forEach(function(el) {
             el.style.paddingTop = '50px';
         });
     </script>

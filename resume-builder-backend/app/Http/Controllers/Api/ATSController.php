@@ -4,11 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\AIService;
+use App\Traits\TracksUsage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class ATSController extends Controller
 {
+    use TracksUsage;
+
     protected $aiService;
 
     public function __construct(AIService $aiService)
@@ -63,6 +66,17 @@ class ATSController extends Controller
             // Determine rating
             $rating = $this->getRating($score);
 
+            // Track usage so monthly counters are accurate
+            $this->trackAIRequest(
+                $request->user()->id,
+                'ats_analysis',
+                null,
+                null,
+                null,
+                null,
+                'success'
+            );
+
             return response()->json([
                 'score' => $score,
                 'rating' => $rating,
@@ -73,6 +87,18 @@ class ATSController extends Controller
                 'has_job_description' => $hasJobDescription,
             ]);
         } catch (\Exception $e) {
+            // Track failed attempt too so usage stays consistent
+            $this->trackAIRequest(
+                $request->user()->id,
+                'ats_analysis',
+                null,
+                null,
+                null,
+                null,
+                'error',
+                $e->getMessage()
+            );
+
             \Log::error('ATS analysis failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()

@@ -5,7 +5,20 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import Header from '@/components/layout/header';
-import { pricingAPI, couponAPI, paymentAPI } from '@/lib/api';
+import { pricingAPI, couponAPI, paymentAPI, userAPI } from '@/lib/api';
+
+// ── Currency helpers ──────────────────────────────────────────────────────────
+
+const CURRENCY_SYMBOLS: Record<string, string> = {
+    INR: '₹',
+    USD: '$',
+    EUR: '€',
+};
+
+function formatCurrency(amount: number, currency: string): string {
+    const symbol = CURRENCY_SYMBOLS[currency] ?? currency + ' ';
+    return `${symbol}${amount.toFixed(2)}`;
+}
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -13,7 +26,7 @@ export const dynamic = 'force-dynamic';
 function CheckoutContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { user, loading } = useAuth();
+    const { user, loading, refreshUser } = useAuth();
     const [gstNumber, setGstNumber] = useState('');
     const [couponCode, setCouponCode] = useState('');
     const [couponApplied, setCouponApplied] = useState(false);
@@ -24,6 +37,13 @@ function CheckoutContent() {
     const [couponDiscount, setCouponDiscount] = useState('0');
     const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
     const [phoneNumber, setPhoneNumber] = useState('');
+    // Server-confirmed prices (overwritten when order is created)
+    const [serverPricing, setServerPricing] = useState<null | {
+        base_price: number;
+        gst_amount: number;
+        discount_amount: number;
+        total_amount: number;
+    }>(null);
 
     // Get plan details from URL parameters
     const planSlug = searchParams.get('plan') || 'pro';
@@ -38,15 +58,20 @@ function CheckoutContent() {
 
     const planName = planNames[planSlug] || 'Pro';
 
-    // Fetch pricing plans from API
+    // Fetch pricing plans + detect currency from API
     useEffect(() => {
         const fetchPricingData = async () => {
             try {
-                // Detect currency
-                const currencyResponse = await pricingAPI.detectCurrency();
-                setDetectedCurrency(currencyResponse.data.currency);
+                // Prefer user's saved currency preference, fall back to geo-detection
+                let currency: 'USD' | 'INR' | 'EUR' = (user?.currency_preference as any) ?? 'INR';
 
-                // Fetch pricing plans
+                if (!user?.currency_preference) {
+                    const currencyResponse = await pricingAPI.detectCurrency();
+                    currency = currencyResponse.data.currency;
+                }
+
+                setDetectedCurrency(currency);
+
                 const plansResponse = await pricingAPI.getPlans();
                 setPricingPlans(plansResponse.data);
             } catch (error) {
@@ -55,7 +80,7 @@ function CheckoutContent() {
         };
 
         fetchPricingData();
-    }, []);
+    }, [user?.currency_preference]);
 
     // Find the selected plan
     const selectedPlan = pricingPlans.find(p => p.slug === planSlug);
@@ -135,20 +160,22 @@ function CheckoutContent() {
     };
 
     const handlePayment = async () => {
+        if (!phoneNumber.trim()) return;
         setIsProcessing(true);
 
+        // Persist currency preference for next visit
+        if (user && detectedCurrency !== user.currency_preference) {
+            userAPI.updateProfile({ currency_preference: detectedCurrency }).catch(() => {});
+        }
+
         try {
-            // Create Razorpay order
+            // Send ONLY non-price fields — server computes all amounts
             const orderResponse = await paymentAPI.createOrder({
-                amount: Math.round(totalPrice * 100) / 100,
-                plan_slug: planSlug,
-                plan_name: planName,
-                period: period,
-                base_price: basePrice,
-                gst_amount: gstAmount,
-                discount_amount: couponApplied ? discountAmount : 0,
-                coupon_code: couponApplied ? couponCode : null,
+                plan_slug:    planSlug,
+                period:       period,
+                coupon_code:  couponApplied ? couponCode : null,
                 phone_number: phoneNumber,
+                currency:     detectedCurrency,
             });
 
             const orderData = orderResponse.data;
@@ -157,52 +184,50 @@ function CheckoutContent() {
                 throw new Error(orderData.message || 'Failed to create order');
             }
 
-            // Initialize Razorpay
+            // Use server-confirmed prices for display
+            if (orderData.pricing) {
+                setServerPricing(orderData.pricing);
+            }
+
             const options = {
-                key: orderData.key_id,
-                amount: orderData.amount,
-                currency: orderData.currency,
-                name: 'ResumeBP',
-                description: `${planName} Plan - ${period === 'yearly' ? 'Yearly' : 'Monthly'}`,
-                order_id: orderData.order_id,
+                key:         orderData.key_id,
+                amount:      orderData.amount,
+                currency:    orderData.currency,
+                name:        'ResumeBP',
+                description: `${planName} Plan – ${period === 'yearly' ? 'Yearly' : 'Monthly'}`,
+                order_id:    orderData.order_id,
                 handler: async function (response: any) {
                     try {
-                        // Verify payment on backend
+                        // Verify — no prices sent, server knows the order
                         const verifyResponse = await paymentAPI.verifyPayment({
-                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_order_id:   response.razorpay_order_id,
                             razorpay_payment_id: response.razorpay_payment_id,
-                            razorpay_signature: response.razorpay_signature,
-                            coupon_code: couponApplied ? couponCode : null,
-                            discount_amount: couponApplied ? discountAmount : 0,
+                            razorpay_signature:  response.razorpay_signature,
                         });
 
-                        const verifyData = verifyResponse.data;
-
-                        if (verifyData.success) {
-                            alert(`Payment Successful!\n\nPayment ID: ${response.razorpay_payment_id}\n\nRedirecting to Resume Builder...`);
-                            router.push('/builder');
+                        if (verifyResponse.data.success) {
+                            // Refresh auth context so plan badge updates immediately
+                            await refreshUser();
+                            router.push('/builder?payment=success');
                         } else {
-                            throw new Error(verifyData.message || 'Payment verification failed');
+                            throw new Error(verifyResponse.data.message || 'Verification failed');
                         }
                     } catch (error) {
                         console.error('Payment verification error:', error);
-                        alert('Payment verification failed. Please contact support.');
+                        alert('Payment verification failed. Please contact support with your payment ID.');
                     } finally {
                         setIsProcessing(false);
                     }
                 },
                 prefill: {
-                    name: user?.name || '',
+                    name:  user?.name  || '',
                     email: user?.email || '',
+                    contact: phoneNumber,
                 },
-                theme: {
-                    color: '#4F46E5',
-                },
+                theme: { color: '#4F46E5' },
                 modal: {
-                    ondismiss: function () {
-                        setIsProcessing(false);
-                    }
-                }
+                    ondismiss: () => setIsProcessing(false),
+                },
             };
 
             const razorpay = new (window as any).Razorpay(options);
@@ -380,18 +405,20 @@ function CheckoutContent() {
                             <div className="space-y-4 mb-6">
                                 <div className="flex justify-between text-sm text-slate-600">
                                     <span>{planName} Plan ({period === 'yearly' ? 'Yearly' : 'Monthly'})</span>
-                                    <span className="font-medium text-slate-900">₹{basePrice.toFixed(2)}</span>
+                                    <span className="font-medium text-slate-900">{formatCurrency(serverPricing?.base_price ?? basePrice, detectedCurrency)}</span>
                                 </div>
-                                <div className="flex justify-between text-sm text-slate-600">
-                                    <span>GST (18%)</span>
-                                    <span className="font-medium text-slate-900">₹{gstAmount.toFixed(2)}</span>
-                                </div>
+                                {(serverPricing?.gst_amount ?? gstAmount) > 0 && (
+                                    <div className="flex justify-between text-sm text-slate-600">
+                                        <span>GST (18%)</span>
+                                        <span className="font-medium text-slate-900">{formatCurrency(serverPricing?.gst_amount ?? gstAmount, detectedCurrency)}</span>
+                                    </div>
+                                )}
 
                                 {/* Discount Row */}
                                 {couponApplied && (
                                     <div className="flex justify-between text-sm text-green-600 font-bold animate-fade-in">
-                                        <span>Coupon Discount (20%)</span>
-                                        <span>-₹{discountAmount.toFixed(2)}</span>
+                                        <span>Coupon Discount</span>
+                                        <span>-{formatCurrency(serverPricing?.discount_amount ?? discountAmount, detectedCurrency)}</span>
                                     </div>
                                 )}
                             </div>
@@ -431,7 +458,7 @@ function CheckoutContent() {
                                 </div>
                                 {couponApplied && (
                                     <p className="text-xs mt-2 text-green-600 font-bold">
-                                        Coupon applied successfully! You saved ₹{discountAmount.toFixed(2)}
+                                        Coupon applied! You saved {formatCurrency(serverPricing?.discount_amount ?? discountAmount, detectedCurrency)}
                                     </p>
                                 )}
                                 {couponError && (
@@ -444,7 +471,7 @@ function CheckoutContent() {
                                     <span className="text-slate-500 font-medium">Total Payable</span>
                                     <div className="text-right">
                                         <span className={`block text-3xl font-display font-bold transition-all duration-300 ${couponApplied ? 'text-green-600' : 'text-slate-900'}`}>
-                                            ₹{totalPrice.toFixed(2)}
+                                            {formatCurrency(serverPricing?.total_amount ?? totalPrice, detectedCurrency)}
                                         </span>
                                         <span className="text-[10px] text-slate-400">Includes all taxes</span>
                                     </div>

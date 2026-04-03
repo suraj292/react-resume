@@ -38,18 +38,19 @@ class UserProfileController extends Controller
         $user = $request->user();
 
         $validator = Validator::make($request->all(), [
-            'name' => 'sometimes|required|string|max:255',
-            'email' => 'sometimes|required|email|max:255|unique:users,email,' . $user->id,
-            'job_title' => 'nullable|string|max:255',
-            'phone' => 'nullable|string|max:20',
-            'location' => 'nullable|string|max:255',
+            'name'                => 'sometimes|required|string|max:255',
+            'email'               => 'sometimes|required|email|max:255|unique:users,email,' . $user->id,
+            'job_title'           => 'nullable|string|max:255',
+            'phone'               => 'nullable|string|max:20',
+            'location'            => 'nullable|string|max:255',
+            'currency_preference' => 'nullable|string|in:INR,USD,EUR',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
-                'errors' => $validator->errors(),
+                'errors'  => $validator->errors(),
             ], 422);
         }
 
@@ -59,14 +60,15 @@ class UserProfileController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Profile updated successfully',
-            'data' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'job_title' => $user->job_title,
-                'phone' => $user->phone,
-                'location' => $user->location,
-                'avatar' => $user->avatar,
+            'data'    => [
+                'id'                  => $user->id,
+                'name'                => $user->name,
+                'email'               => $user->email,
+                'job_title'           => $user->job_title,
+                'phone'               => $user->phone,
+                'location'            => $user->location,
+                'avatar'              => $user->avatar,
+                'currency_preference' => $user->currency_preference,
             ],
         ]);
     }
