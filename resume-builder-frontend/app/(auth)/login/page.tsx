@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useState, FormEvent, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { socialAuthURL } from '@/lib/api';
+import api, { socialAuthURL } from '@/lib/api';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -34,8 +34,22 @@ function LoginContent() {
         const token = searchParams.get('token');
         if (token) {
             localStorage.setItem('auth_token', token);
+            
+            // Set auth cookie so middleware allows access to protected routes
+            const expires = new Date(Date.now() + 30 * 86400_000).toUTCString();
+            document.cookie = `auth_present=1; path=/; expires=${expires}; SameSite=Lax`;
+            
             // Fetch user data and redirect
-            router.push('/builder');
+            api.get('/auth/me')
+                .then((response) => {
+                    const userData = response.data.user;
+                    localStorage.setItem('user', JSON.stringify(userData));
+                    router.push('/builder');
+                })
+                .catch(() => {
+                    // If fetch fails, still redirect but user data will be fetched on builder page
+                    router.push('/builder');
+                });
         }
 
         // Check for email verification status

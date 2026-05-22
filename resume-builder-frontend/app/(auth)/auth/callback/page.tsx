@@ -2,9 +2,16 @@
 
 import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import api from '@/lib/api';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
+
+// Set auth cookie for middleware (same as AuthContext.tsx)
+function setAuthCookie(value: string, days = 30) {
+    const expires = new Date(Date.now() + days * 86400_000).toUTCString();
+    document.cookie = `auth_present=${value}; path=/; expires=${expires}; SameSite=Lax`;
+}
 
 function AuthCallbackContent() {
     const router = useRouter();
@@ -16,9 +23,22 @@ function AuthCallbackContent() {
         if (token) {
             // Store the token
             localStorage.setItem('auth_token', token);
+            
+            // Set auth cookie so middleware allows access to protected routes
+            setAuthCookie('1');
 
-            // Redirect to builder - user data will be fetched there
-            router.push('/builder');
+            // Fetch user data and store it (same as regular login)
+            api.get('/auth/me')
+                .then((response) => {
+                    const userData = response.data.user;
+                    localStorage.setItem('user', JSON.stringify(userData));
+                    // Redirect to builder
+                    router.push('/builder');
+                })
+                .catch(() => {
+                    // If fetch fails, still redirect but user data will be fetched on builder page
+                    router.push('/builder');
+                });
         } else {
             router.push('/login?error=no_token');
         }

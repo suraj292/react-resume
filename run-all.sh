@@ -9,5 +9,8 @@
 # Start backend Laravel queue worker
 (cd resume-builder-backend && php artisan queue:work) &
 
+# Watch for changes and update graphify knowledge graph
+graphify watch . &
+
 # Wait for all background jobs
 wait
