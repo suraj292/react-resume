@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
 
 // Force dynamic rendering
@@ -14,7 +14,6 @@ function setAuthCookie(value: string, days = 30) {
 }
 
 function AuthCallbackContent() {
-    const router = useRouter();
     const searchParams = useSearchParams();
 
     useEffect(() => {
@@ -23,8 +22,10 @@ function AuthCallbackContent() {
         if (token) {
             // Store the token
             localStorage.setItem('auth_token', token);
-            
-            // Set auth cookie so middleware allows access to protected routes
+
+            // Set auth cookie so middleware allows access to protected routes.
+            // This MUST happen before any navigation so the cookie is committed
+            // to the browser's cookie store before the next request hits middleware.
             setAuthCookie('1');
 
             // Fetch user data and store it (same as regular login)
@@ -32,17 +33,22 @@ function AuthCallbackContent() {
                 .then((response) => {
                     const userData = response.data.user;
                     localStorage.setItem('user', JSON.stringify(userData));
-                    // Redirect to builder
-                    router.push('/builder');
                 })
                 .catch(() => {
-                    // If fetch fails, still redirect but user data will be fetched on builder page
-                    router.push('/builder');
+                    // User data will be fetched on the builder page by AuthContext
+                })
+                .finally(() => {
+                    // Use a hard redirect (full page reload) instead of router.push.
+                    // router.push does a client-side navigation that can race against
+                    // the cookie being flushed, causing middleware to see no cookie.
+                    // window.location.href forces a new HTTP request so the browser
+                    // always sends the freshly-set auth_present cookie.
+                    window.location.href = '/builder';
                 });
         } else {
-            router.push('/login?error=no_token');
+            window.location.href = '/login?error=no_token';
         }
-    }, [searchParams, router]);
+    }, [searchParams]);
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-slate-50">
